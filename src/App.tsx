@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import LiveSupport from "./pages/LiveSupport";
 import { CallProvider } from "./contexts/CallContext";
 import MockUserPanel from "@/components/MockUserPanel";
+import InterpreterNotification from "@/components/notifications/InterpreterNotification";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ function App() {
             <Toaster />
             <Sonner />
             <Router>
+              <InterpreterNotification />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/call" element={<Call />} />

@@ -76,11 +76,25 @@ const CallPage = () => {
         // Update URL without navigating
         window.history.replaceState(null, '', `/join/${newRoomId}`);
 
-        // If creating a call as a client and Maria is the interpreter, copy link to clipboard
-        if (mockUserType === 'client' && interpreterData && interpreterData.id === "maria-rodriguez") {
-          const inviteUrl = `${window.location.origin}/join/${newRoomId}?mock_user=maria`;
-          await navigator.clipboard.writeText(inviteUrl);
-          toast.success('Copied Maria\'s invite link to clipboard. Open in a new browser window!');
+        // If creating a call as a client, notify Maria (interpreter)
+        if (mockUserType === 'client' || (!mockUserType && interpreterData)) {
+          // Store call information in localStorage to notify Maria
+          const callData = {
+            roomId: newRoomId,
+            callerId: 'client-user',
+            callerName: mockUserType === 'client' ? 'Client User' : 'Guest User',
+            timestamp: Date.now(),
+            callType: callType
+          };
+          
+          localStorage.setItem('pendingCall', JSON.stringify(callData));
+          
+          // If Maria is the target interpreter, automatically copy link to clipboard
+          if (interpreterData && interpreterData.id === "maria-rodriguez") {
+            const inviteUrl = `${window.location.origin}/join/${newRoomId}?mock_user=maria`;
+            await navigator.clipboard.writeText(inviteUrl);
+            toast.success('Copied Maria\'s invite link to clipboard. Open in a new browser window!');
+          }
         }
       }
       
