@@ -4,13 +4,20 @@ import {
   MicIcon, MicOffIcon, VideoIcon, VideoOffIcon, 
   PhoneOffIcon, MessageSquare, Users, SettingsIcon,
   MonitorIcon, Volume2Icon, Volume1Icon, VolumeXIcon, Video,
-  User, UserCheck, BellIcon, PanelLeftIcon, PenLine
+  User, UserCheck, BellIcon, PanelLeftIcon, PenLine, Copy, CheckCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from '@/components/ui/dialog';
 
 interface CallInterfaceProps {
   onEndCall?: () => void;
@@ -34,6 +41,9 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [inviteLink, setInviteLink] = useState('');
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   
   // Mock participants data
   const participants = [
@@ -45,6 +55,14 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
   const [notifications, setNotifications] = useState(true);
   const [highContrast, setHighContrast] = useState(false);
   const [autoCaption, setAutoCaption] = useState(true);
+  
+  // Generate invite link
+  useEffect(() => {
+    // Generate a unique call ID (in a real app, this would be handled by the backend)
+    const callId = Math.random().toString(36).substring(2, 15);
+    const baseUrl = window.location.origin;
+    setInviteLink(`${baseUrl}/join/${callId}`);
+  }, []);
   
   // Simulate connection
   useEffect(() => {
@@ -121,6 +139,27 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
     if (volume[0] === 0) return <VolumeXIcon className="h-4 w-4" />;
     if (volume[0] < 50) return <Volume1Icon className="h-4 w-4" />;
     return <Volume2Icon className="h-4 w-4" />;
+  };
+
+  // Copy invite link
+  const copyInviteLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+      setLinkCopied(true);
+      toast.success('Invite link copied to clipboard');
+      
+      // Reset copied state after 3 seconds
+      setTimeout(() => {
+        setLinkCopied(false);
+      }, 3000);
+    } catch (err) {
+      toast.error('Failed to copy link. Please try again.');
+    }
+  };
+
+  // Show invite dialog
+  const handleShowInviteDialog = () => {
+    setShowInviteDialog(true);
   };
 
   return (
@@ -345,15 +384,34 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
             ))}
           </div>
           
-          <div className="absolute bottom-4 left-0 right-0 px-4">
+          <div className="absolute bottom-4 left-0 right-0 px-4 space-y-2">
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="w-full"
+              onClick={handleShowInviteDialog}
+            >
+              <Copy className="h-4 w-4 mr-1" />
+              Get invite link
+            </Button>
+            
             <Button 
               variant="outline" 
               size="sm" 
               className="w-full border-dashed"
-              onClick={() => toast.info("Invite functionality not implemented yet")}
+              onClick={copyInviteLink}
             >
-              <PenLine className="h-4 w-4 mr-1" />
-              Copy invite link
+              {linkCopied ? (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-1 text-green-500" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4 mr-1" />
+                  Copy invite link
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -447,8 +505,35 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
           </div>
         </div>
       )}
+
+      {/* Invite Link Dialog */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Invite to call</DialogTitle>
+            <DialogDescription>
+              Share this link with others to invite them to join your call.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center space-x-2 mt-4">
+            <div className="border rounded-md p-2 flex-1 bg-muted/30 truncate">
+              {inviteLink}
+            </div>
+            <Button size="sm" onClick={copyInviteLink}>
+              {linkCopied ? <CheckCircle className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
+              {linkCopied ? "Copied" : "Copy"}
+            </Button>
+          </div>
+          <div className="mt-4">
+            <p className="text-sm text-muted-foreground">
+              People who join using this link will be able to participate in your call.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
 export default CallInterface;
+
