@@ -1,10 +1,11 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   MicIcon, MicOffIcon, VideoIcon, VideoOffIcon, 
   PhoneOffIcon, MessageSquare, Users, SettingsIcon,
   MonitorIcon, Volume2Icon, Volume1Icon, VolumeXIcon, Video,
-  User, UserCheck, BellIcon, PanelLeftIcon, PenLine, Copy, CheckCircle
+  User, UserCheck, BellIcon, PanelLeftIcon, PenLine, Copy, CheckCircle,
+  Send, Paperclip
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -18,6 +19,7 @@ import {
   DialogTitle,
   DialogDescription
 } from '@/components/ui/dialog';
+import { useCall } from '@/contexts/CallContext';
 
 interface CallInterfaceProps {
   onEndCall?: () => void;
@@ -33,9 +35,21 @@ interface CallInterfaceProps {
 }
 
 const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInterfaceProps) => {
-  const [isMicOn, setIsMicOn] = useState(true);
-  const [isVideoOn, setIsVideoOn] = useState(callType === 'video');
-  const [isConnected, setIsConnected] = useState(false);
+  // Call context for real-time communication
+  const { 
+    isMicOn, 
+    isVideoOn, 
+    toggleMic, 
+    toggleVideo, 
+    participants, 
+    messages, 
+    sendMessage,
+    localStream,
+    remoteStream,
+    roomId,
+    leaveCall
+  } = useCall();
+  
   const [volume, setVolume] = useState([50]);
   const [callDuration, setCallDuration] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -44,35 +58,49 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
   const [inviteLink, setInviteLink] = useState('');
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [messageText, setMessageText] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
   
-  // Mock participants data
-  const participants = [
-    { id: '1', name: 'You', role: 'Patient', isYou: true },
-    { id: '2', name: interpreter?.name || 'Interpreter', role: 'Interpreter', isInterpreter: true },
-  ];
-
+  // Refs for video elements
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  
   // Settings options
   const [notifications, setNotifications] = useState(true);
   const [highContrast, setHighContrast] = useState(false);
   const [autoCaption, setAutoCaption] = useState(true);
   
+  // Setup local and remote video streams
+  useEffect(() => {
+    if (localStream && localVideoRef.current) {
+      localVideoRef.current.srcObject = localStream;
+    }
+    
+    if (remoteStream && remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [localStream, remoteStream]);
+  
   // Generate invite link
   useEffect(() => {
-    // Generate a unique call ID (in a real app, this would be handled by the backend)
-    const callId = Math.random().toString(36).substring(2, 15);
-    const baseUrl = window.location.origin;
-    setInviteLink(`${baseUrl}/join/${callId}`);
-  }, []);
+    if (roomId) {
+      const baseUrl = window.location.origin;
+      setInviteLink(`${baseUrl}/join/${roomId}`);
+    }
+  }, [roomId]);
   
-  // Simulate connection
+  // Simulate connection with participants
   useEffect(() => {
     const timer = setTimeout(() => {
-      setIsConnected(true);
-      toast.success(`${interpreter?.name || 'Interpreter'} connected to your call`);
-    }, 3000);
+      setIsConnected(participants.length > 1);
+      if (participants.length > 1) {
+        toast.success(`${participants.find(p => !p.isYou)?.name || 'Participant'} connected to your call`);
+      }
+    }, 2000);
     
     return () => clearTimeout(timer);
-  }, [interpreter]);
+  }, [participants]);
   
   // Call timer
   useEffect(() => {
@@ -89,6 +117,13 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
     };
   }, [isConnected]);
   
+  // Scroll chat to bottom when new messages arrive
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+  
   // Format call duration
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -96,26 +131,10 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
   
-  // Toggle mic
-  const toggleMic = () => {
-    setIsMicOn(!isMicOn);
-    toast(isMicOn ? 'Microphone turned off' : 'Microphone turned on');
-  };
-  
-  // Toggle video
-  const toggleVideo = () => {
-    if (callType === 'voice') {
-      toast.error('This is a voice-only call');
-      return;
-    }
-    setIsVideoOn(!isVideoOn);
-    toast(isVideoOn ? 'Camera turned off' : 'Camera turned on');
-  };
-  
   // End call
-  const handleEndCall = () => {
-    toast.error('Call ended');
+  const handleEndCall = async () => {
     if (onEndCall) onEndCall();
+    await leaveCall();
   };
   
   // Toggle participants panel
@@ -161,6 +180,22 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
   const handleShowInviteDialog = () => {
     setShowInviteDialog(true);
   };
+  
+  // Handle sending a message
+  const handleSendMessage = () => {
+    if (!messageText.trim()) return;
+    
+    const userName = participants.find(p => p.isYou)?.name || 'You';
+    sendMessage(messageText, userName);
+    setMessageText('');
+  };
+  
+  // Handle key press in message input
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSendMessage();
+    }
+  };
 
   return (
     <div className="relative h-full flex flex-col">
@@ -179,34 +214,49 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
         {/* Remote video (interpreter) */}
         <div className="absolute inset-0 flex items-center justify-center">
           {isConnected ? (
-            <img 
-              src={interpreter?.image || "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"} 
-              alt={interpreter?.name || "Interpreter"} 
-              className="w-full h-full object-cover"
-            />
+            remoteStream ? (
+              <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <img 
+                src={interpreter?.image || "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"} 
+                alt={interpreter?.name || "Interpreter"} 
+                className="w-full h-full object-cover"
+              />
+            )
           ) : (
             <div className="text-white/80">
               <div className="w-16 h-16 border-4 border-t-transparent border-white/30 rounded-full animate-spin mb-4 mx-auto" />
-              <p>Connecting to interpreter...</p>
+              <p>Connecting to call...</p>
             </div>
           )}
         </div>
         
-        {/* Interpreter info */}
+        {/* Interpreter/Remote user info */}
         {isConnected && (
           <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 text-white text-sm">
-            <div className="font-medium">{interpreter?.name || "Interpreter"}</div>
-            <div className="text-xs text-white/70">{interpreter?.languages?.join(', ') || "Multilingual"}</div>
+            <div className="font-medium">
+              {participants.find(p => !p.isYou)?.name || interpreter?.name || "Remote User"}
+            </div>
+            <div className="text-xs text-white/70">
+              {interpreter?.languages?.join(', ') || participants.find(p => !p.isYou)?.role || "Participant"}
+            </div>
           </div>
         )}
         
         {/* Self video (user) */}
         <div className="absolute bottom-4 right-4 w-40 h-32 bg-zinc-800 rounded-lg overflow-hidden border border-white/20 shadow-lg">
           {isVideoOn && callType === 'video' ? (
-            <img 
-              src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
-              alt="You" 
-              className="w-full h-full object-cover"
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover mirror"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -278,8 +328,14 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
                 setIsChatOpen(!isChatOpen);
               }}
               className="rounded-full h-10 w-10"
+              aria-label="Chat"
             >
               <MessageSquare className="h-5 w-5" />
+              {messages.length > 0 && !isChatOpen && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs flex items-center justify-center rounded-full">
+                  {messages.length > 9 ? '9+' : messages.length}
+                </span>
+              )}
             </Button>
             
             {/* Participants */}
@@ -321,20 +377,63 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
               &times;
             </Button>
           </div>
-          <div className="h-[calc(100%-6rem)] overflow-y-auto mb-4">
-            {/* Chat messages would go here */}
-            <div className="text-center text-sm text-muted-foreground py-8">
-              No messages yet
-            </div>
+          <div 
+            className="h-[calc(100%-6rem)] overflow-y-auto mb-4 px-1"
+            ref={chatContainerRef}
+          >
+            {messages.length > 0 ? (
+              <div className="space-y-4">
+                {messages.map((message) => {
+                  const isYou = participants.find(p => p.isYou)?.name === message.sender;
+                  return (
+                    <div 
+                      key={message.id} 
+                      className={`flex items-start gap-2 ${isYou ? 'justify-end' : ''}`}
+                    >
+                      {!isYou && (
+                        <div className="bg-primary text-primary-foreground rounded-full h-8 w-8 flex items-center justify-center flex-shrink-0">
+                          {message.sender.charAt(0)}
+                        </div>
+                      )}
+                      <div className={`rounded-lg p-3 max-w-[80%] ${isYou ? 'bg-primary/10' : 'bg-muted'}`}>
+                        {!isYou && <p className="text-sm font-medium">{message.sender}</p>}
+                        <p className="text-sm">{message.text}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      {isYou && (
+                        <div className="bg-background border rounded-full h-8 w-8 flex items-center justify-center flex-shrink-0">
+                          {message.sender.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center text-sm text-muted-foreground py-8">
+                No messages yet
+              </div>
+            )}
           </div>
           <div className="border border-input rounded-md flex overflow-hidden">
             <input 
               type="text" 
               placeholder="Type a message..." 
               className="flex-1 px-3 py-2 bg-transparent text-sm focus:outline-none"
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              onKeyDown={handleKeyPress}
             />
-            <Button variant="ghost" size="sm" className="h-full rounded-none px-3">
-              Send
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-full rounded-none px-3"
+              onClick={handleSendMessage}
+              disabled={!messageText.trim()}
+            >
+              <Send className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -356,32 +455,38 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
           </div>
           
           <div className="space-y-3">
-            {participants.map((participant) => (
-              <div key={participant.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    {participant.isYou ? (
-                      <User className="h-5 w-5 text-primary" />
-                    ) : (
-                      <UserCheck className="h-5 w-5 text-primary" />
+            {participants.length > 0 ? (
+              participants.map((participant) => (
+                <div key={participant.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      {participant.isYou ? (
+                        <User className="h-5 w-5 text-primary" />
+                      ) : (
+                        <UserCheck className="h-5 w-5 text-primary" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">
+                        {participant.name} {participant.isYou && "(You)"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{participant.role}</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    {participant.role === 'interpreter' && (
+                      <div className="text-xs bg-blue-500/10 text-blue-500 py-1 px-2 rounded-full">
+                        Interpreter
+                      </div>
                     )}
                   </div>
-                  <div>
-                    <div className="font-medium text-sm">
-                      {participant.name} {participant.isYou && "(You)"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">{participant.role}</div>
-                  </div>
                 </div>
-                <div className="flex gap-1">
-                  {participant.isInterpreter && (
-                    <div className="text-xs bg-blue-500/10 text-blue-500 py-1 px-2 rounded-full">
-                      Interpreter
-                    </div>
-                  )}
-                </div>
+              ))
+            ) : (
+              <div className="text-center text-sm text-muted-foreground py-8">
+                Waiting for participants to join...
               </div>
-            ))}
+            )}
           </div>
           
           <div className="absolute bottom-4 left-0 right-0 px-4 space-y-2">
@@ -531,9 +636,15 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Add a style for mirroring your own video */}
+      <style jsx>{`
+        .mirror {
+          transform: scaleX(-1);
+        }
+      `}</style>
     </div>
   );
 };
 
 export default CallInterface;
-
