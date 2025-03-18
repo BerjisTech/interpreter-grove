@@ -13,6 +13,8 @@ import HowItWorks from "./pages/HowItWorks";
 import Pricing from "./pages/Pricing";
 import Dashboard from "./pages/Dashboard";
 import LiveSupport from "./pages/LiveSupport";
+import LanguageLearning from "./pages/LanguageLearning";
+import CulturalConsultancy from "./pages/CulturalConsultancy";
 import { CallProvider } from "./contexts/CallContext";
 import MockUserPanel from "@/components/MockUserPanel";
 import InterpreterNotification from "@/components/notifications/InterpreterNotification";
@@ -134,6 +136,8 @@ function App() {
                 <Route path="/how-it-works" element={<HowItWorks />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/dashboard/*" element={<Dashboard />} />
+                <Route path="/language-learning" element={<LanguageLearning />} />
+                <Route path="/cultural-consultancy" element={<CulturalConsultancy />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <MockUserPanel />
