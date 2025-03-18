@@ -4,8 +4,10 @@ import InterpreterCard from "@/components/interpreters/InterpreterCard";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
 import { ArrowDown, MapPin } from "lucide-react";
+import { Interpreter } from "@/types/interpreter";
+import InterpreterGrid from "@/components/interpreters/InterpreterGrid";
 
-const interpreters = [
+const interpreters: Interpreter[] = [
   {
     id: "1",
     name: "Maria Rodriguez",
@@ -16,6 +18,10 @@ const interpreters = [
     image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=2576&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     specialties: ["Medical", "Legal"],
     online: true,
+    isNative: true,
+    jobsCompleted: 256,
+    hoursCompleted: 512,
+    type: "freelance"
   },
   {
     id: "2",
@@ -27,6 +33,10 @@ const interpreters = [
     image: "https://images.unsplash.com/photo-1577880216142-8549e9488dad?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     specialties: ["Technical", "Business"],
     online: false,
+    isNative: true,
+    jobsCompleted: 128,
+    hoursCompleted: 420,
+    type: "agency"
   },
   {
     id: "3",
@@ -38,6 +48,10 @@ const interpreters = [
     image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
     specialties: ["Medical", "Educational"],
     online: true,
+    isNative: false,
+    jobsCompleted: 93,
+    hoursCompleted: 312,
+    type: "freelance"
   },
 ];
 
