@@ -1,22 +1,13 @@
 
-import { StarIcon, Video, Phone, Clock, LanguagesIcon } from 'lucide-react';
+import { StarIcon, Video, Phone, Clock, LanguagesIcon, User, Briefcase, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Interpreter } from '@/types/interpreter';
 
 interface InterpreterCardProps {
-  interpreter: {
-    id: string;
-    name: string;
-    languages: string[];
-    rating: number;
-    reviews: number;
-    availability: string;
-    image: string;
-    specialties: string[];
-    online: boolean;
-  };
+  interpreter: Interpreter;
 }
 
 const InterpreterCard = ({ interpreter }: InterpreterCardProps) => {
@@ -55,7 +46,7 @@ const InterpreterCard = ({ interpreter }: InterpreterCardProps) => {
   };
 
   return (
-    <div className="bg-card border border-border hover:shadow-medium transition-all duration-300 rounded-xl overflow-hidden">
+    <div className="bg-card border border-border hover:shadow-medium transition-all duration-300 rounded-xl overflow-hidden group">
       <div className="relative">
         <img 
           src={interpreter.image} 
@@ -68,6 +59,14 @@ const InterpreterCard = ({ interpreter }: InterpreterCardProps) => {
           <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-soft flex items-center">
             <span className="h-2 w-2 rounded-full bg-green-500 mr-1.5"></span>
             <span className="text-xs font-medium">Available Now</span>
+          </div>
+        )}
+        
+        {/* Native speaker tag */}
+        {interpreter.isNative && (
+          <div className="absolute top-3 left-3 bg-primary/90 text-primary-foreground backdrop-blur-sm px-2 py-1 rounded-full shadow-soft flex items-center">
+            <Award className="h-3 w-3 mr-1" />
+            <span className="text-xs font-medium">Native Speaker</span>
           </div>
         )}
       </div>
@@ -98,6 +97,17 @@ const InterpreterCard = ({ interpreter }: InterpreterCardProps) => {
                 {specialty}
               </Badge>
             ))}
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <div className="bg-accent/30 rounded-md p-2 flex items-center justify-center">
+              <Briefcase className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+              <span className="text-xs">{interpreter.jobsCompleted} jobs</span>
+            </div>
+            <div className="bg-accent/30 rounded-md p-2 flex items-center justify-center">
+              <User className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+              <span className="text-xs">{interpreter.type}</span>
+            </div>
           </div>
         </div>
         
