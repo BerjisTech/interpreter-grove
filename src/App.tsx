@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { useEffect } from 'react';
 import Index from "./pages/Index";
 import Call from "./pages/Call";
 import NotFound from "./pages/NotFound";
@@ -25,6 +26,10 @@ function App() {
       const pendingCall = localStorage.getItem('pendingCall');
       if (pendingCall) {
         console.log("Pending call in localStorage:", JSON.parse(pendingCall));
+        
+        // Dispatch a custom event to notify the InterpreterNotification component
+        const callData = JSON.parse(pendingCall);
+        window.dispatchEvent(new CustomEvent('incomingCall', { detail: callData }));
       }
     };
     
@@ -32,7 +37,7 @@ function App() {
     checkPendingCall();
     
     // And set up interval to check regularly
-    const interval = setInterval(checkPendingCall, 5000);
+    const interval = setInterval(checkPendingCall, 3000);
     
     return () => clearInterval(interval);
   }, []);
@@ -65,7 +70,5 @@ function App() {
     </>
   );
 }
-
-import { useEffect } from 'react';
 
 export default App;
