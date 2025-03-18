@@ -49,7 +49,7 @@ const Index = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       {/* Hero Section */}
       <Hero />
       
@@ -68,7 +68,7 @@ const Index = () => {
       
       {/* Interpreters Section */}
       <div 
-        className="container mx-auto py-24 px-4 md:px-6" 
+        className="container mx-auto py-24 px-4 md:px-6 bg-background" 
         ref={interpretersRef}
       >
         <div className="text-center mb-12">
@@ -118,10 +118,9 @@ const Index = () => {
           </div>
           
           <div className="max-w-4xl mx-auto rounded-lg overflow-hidden shadow-xl border border-white/20">
-            <div style={{ height: "500px" }}>
+            <div style={{ height: "500px" }} className="bg-card">
               {/* Include the CallInterface component */}
-              {/* The height is fixed for demo purposes */}
-              <div className="w-full h-full">
+              <div className="w-full h-full relative">
                 <video 
                   src="https://player.vimeo.com/external/403295687.sd.mp4?s=3446f787cefa52e7824d6ce6501f5bd7a3f6add6&profile_id=165&oauth2_token_id=57447761" 
                   autoPlay 

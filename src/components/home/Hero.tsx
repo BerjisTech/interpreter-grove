@@ -29,13 +29,10 @@ const Hero = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen flex flex-col justify-center overflow-hidden">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-accent/30 via-background to-background -z-10" />
-      
-      {/* Abstract shapes */}
-      <div className="absolute top-20 right-[10%] w-72 h-72 bg-primary/5 rounded-full blur-3xl -z-10" />
-      <div className="absolute bottom-20 left-[5%] w-96 h-96 bg-primary/10 rounded-full blur-3xl -z-10" />
+    <div className="relative min-h-screen flex flex-col justify-center overflow-hidden bg-gradient-to-br from-accent/30 via-background to-background">
+      {/* Background elements */}
+      <div className="absolute top-20 right-[10%] w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 left-[5%] w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
       
       <div className="container mx-auto pt-24 pb-16 px-4 md:px-6 z-10">
         <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
@@ -98,7 +95,7 @@ const Hero = () => {
               </div>
               
               {/* Floating elements */}
-              <div className="absolute -left-12 top-1/4 glass-card p-4 rounded-xl animate-float shadow-soft">
+              <div className="absolute -left-12 top-1/4 bg-card p-4 rounded-xl animate-float shadow-soft border border-border">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                     <Headphones className="h-5 w-5 text-primary" />
@@ -110,7 +107,7 @@ const Hero = () => {
                 </div>
               </div>
               
-              <div className="absolute -right-8 bottom-1/4 glass-card p-4 rounded-xl animate-float shadow-soft" style={{animationDelay: "1s"}}>
+              <div className="absolute -right-8 bottom-1/4 bg-card p-4 rounded-xl animate-float shadow-soft border border-border" style={{animationDelay: "1s"}}>
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                     <Phone className="h-5 w-5 text-primary" />

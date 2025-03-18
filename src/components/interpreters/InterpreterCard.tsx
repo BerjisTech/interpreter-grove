@@ -36,7 +36,7 @@ const InterpreterCard = ({ interpreter }: InterpreterCardProps) => {
   };
 
   return (
-    <div className="glass-card group hover:shadow-medium transition-all duration-300 rounded-xl overflow-hidden">
+    <div className="bg-card border border-border hover:shadow-medium transition-all duration-300 rounded-xl overflow-hidden">
       <div className="relative">
         <img 
           src={interpreter.image} 
@@ -46,7 +46,7 @@ const InterpreterCard = ({ interpreter }: InterpreterCardProps) => {
         
         {/* Online status indicator */}
         {interpreter.online && (
-          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-soft flex items-center">
+          <div className="absolute top-3 right-3 bg-background/90 backdrop-blur-sm px-2 py-1 rounded-full shadow-soft flex items-center">
             <span className="h-2 w-2 rounded-full bg-green-500 mr-1.5"></span>
             <span className="text-xs font-medium">Available Now</span>
           </div>
