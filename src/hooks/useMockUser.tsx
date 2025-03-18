@@ -22,10 +22,24 @@ export const mariaMockData = {
 export const useMockUser = () => {
   const [isMockUser, setIsMockUser] = useState(false);
   const [mockUserType, setMockUserType] = useState<string | null>(null);
-  const location = useLocation();
-  const navigate = useNavigate();
+  
+  // Use try/catch to handle cases when this hook might be used outside Router context
+  let location;
+  let navigate;
+  
+  try {
+    location = useLocation();
+    navigate = useNavigate();
+  } catch (error) {
+    console.warn('useMockUser: Router hooks not available, using fallback');
+    location = { search: '', pathname: '' };
+    navigate = () => {};
+  }
 
   useEffect(() => {
+    // Skip if not in Router context
+    if (!location) return;
+    
     // Check URL for mock_user parameter
     const params = new URLSearchParams(location.search);
     const mockUser = params.get('mock_user');
@@ -39,7 +53,9 @@ export const useMockUser = () => {
         toast.success('Logged in as Maria Rodriguez (Interpreter)');
         
         // Remove query parameter without reloading the page
-        navigate(location.pathname, { replace: true });
+        if (navigate) {
+          navigate(location.pathname, { replace: true });
+        }
       } else if (mockUser.toLowerCase() === 'client') {
         setIsMockUser(true);
         setMockUserType('client');
@@ -47,7 +63,9 @@ export const useMockUser = () => {
         toast.success('Logged in as Test Client');
         
         // Remove query parameter without reloading the page
-        navigate(location.pathname, { replace: true });
+        if (navigate) {
+          navigate(location.pathname, { replace: true });
+        }
       } else {
         // Invalid mock user
         toast.error('Invalid mock user type');
@@ -56,7 +74,9 @@ export const useMockUser = () => {
         setMockUserType(null);
         
         // Remove query parameter without reloading the page
-        navigate(location.pathname, { replace: true });
+        if (navigate) {
+          navigate(location.pathname, { replace: true });
+        }
       }
     } else {
       // Check if we have a mock user in localStorage
