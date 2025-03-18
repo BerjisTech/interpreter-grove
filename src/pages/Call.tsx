@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import CallInterface from "@/components/call/CallInterface";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { PhoneIcon, ArrowLeft } from "lucide-react";
+import { PhoneIcon, ArrowLeft, Video } from "lucide-react";
 import { toast } from "sonner";
 
 const CallPage = () => {
