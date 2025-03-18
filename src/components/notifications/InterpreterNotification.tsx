@@ -1,6 +1,6 @@
 
-import { useState, useEffect } from 'react';
-import { BellRing, PhoneCall, Video, X } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { BellRing, PhoneCall, PhoneIncoming, Video, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useMockUser } from '@/hooks/useMockUser';
@@ -24,9 +24,48 @@ const InterpreterNotification = () => {
   // Check if user is Maria (interpreter)
   const isInterpreter = isMockUser && mockUserType === 'interpreter';
   
+  // Callback to handle incoming calls
+  const notifyIncomingCall = useCallback((callData: CallData) => {
+    console.log("InterpreterNotification: Processing incoming call", callData);
+    
+    if (!callData || !callData.roomId) {
+      console.error("Invalid call data:", callData);
+      return;
+    }
+    
+    // Check if the call is recent (within the last 5 minutes)
+    const now = Date.now();
+    const callTime = callData.timestamp || 0;
+    const fiveMinutesInMs = 5 * 60 * 1000;
+    
+    if (now - callTime > fiveMinutesInMs) {
+      console.log("Call is too old, ignoring");
+      return;
+    }
+    
+    console.log("InterpreterNotification: Showing notification for call", callData);
+    setIncomingCall(callData);
+    setIsNotificationVisible(true);
+    
+    // Play sound notification
+    playCallNotification();
+    
+    // Also show toast notification
+    toast(`Incoming ${callData.callType} call from ${callData.callerName}`, {
+      duration: 10000,
+      action: {
+        label: "Answer",
+        onClick: () => answerCall(callData),
+      },
+    });
+  }, []);
+  
   useEffect(() => {
     // Only listen for calls if user is logged in as interpreter
-    if (!isInterpreter) return;
+    if (!isInterpreter) {
+      console.log("InterpreterNotification: Not an interpreter, not listening for calls");
+      return;
+    }
     
     console.log("InterpreterNotification: Interpreter is logged in, listening for calls");
     
@@ -35,6 +74,31 @@ const InterpreterNotification = () => {
       console.log("InterpreterNotification: Received incomingCall event", event.detail);
       notifyIncomingCall(event.detail);
     };
+    
+    // Check for existing call in localStorage when component mounts
+    const checkExistingCall = () => {
+      try {
+        const existingCallStr = localStorage.getItem('pendingCall');
+        console.log("InterpreterNotification: Checking for existing calls:", existingCallStr);
+        
+        if (existingCallStr) {
+          const callData = JSON.parse(existingCallStr);
+          if (callData && callData.roomId) {
+            console.log("InterpreterNotification: Found pending call", callData);
+            notifyIncomingCall(callData);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking for existing calls:', error);
+      }
+    };
+    
+    // Add event listeners
+    window.addEventListener('incomingCall', handleIncomingCallEvent as EventListener);
+    
+    // Check for existing calls immediately and on interval
+    checkExistingCall();
+    const checkInterval = setInterval(checkExistingCall, 5000);
     
     // Listen for storage events (for cross-tab functionality)
     const handleStorageChange = (event: StorageEvent) => {
@@ -52,60 +116,14 @@ const InterpreterNotification = () => {
       }
     };
     
-    // Check if there's already a pending call
-    const checkExistingCall = () => {
-      const existingCall = localStorage.getItem('pendingCall');
-      console.log("InterpreterNotification: Checking for existing calls:", existingCall);
-      if (existingCall) {
-        try {
-          const callData = JSON.parse(existingCall);
-          if (callData && callData.roomId && Date.now() - callData.timestamp < 60000) { // within 60 seconds
-            console.log("InterpreterNotification: Found recent pending call", callData);
-            notifyIncomingCall(callData);
-          } else {
-            // Clear old pending calls
-            console.log("InterpreterNotification: Clearing old pending call");
-            localStorage.removeItem('pendingCall');
-          }
-        } catch (error) {
-          console.error('Error parsing existing call data:', error);
-        }
-      }
-    };
-    
-    // Add event listeners
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('incomingCall', handleIncomingCallEvent as EventListener);
-    
-    // Check for existing calls immediately and on interval
-    checkExistingCall();
-    const checkInterval = setInterval(checkExistingCall, 5000);
     
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('incomingCall', handleIncomingCallEvent as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
       clearInterval(checkInterval);
     };
-  }, [isInterpreter]);
-  
-  // Function to handle new incoming calls
-  const notifyIncomingCall = (callData: CallData) => {
-    console.log("InterpreterNotification: Notifying incoming call", callData);
-    setIncomingCall(callData);
-    setIsNotificationVisible(true);
-    
-    // Play sound notification
-    playCallNotification();
-    
-    // Also show toast notification
-    toast(`Incoming ${callData.callType} call from ${callData.callerName}`, {
-      duration: 10000,
-      action: {
-        label: "Answer",
-        onClick: () => answerCall(callData),
-      },
-    });
-  };
+  }, [isInterpreter, notifyIncomingCall]);
   
   // Handle answering the call
   const answerCall = (call: CallData) => {
@@ -127,7 +145,6 @@ const InterpreterNotification = () => {
   
   // If not logged in as interpreter or no incoming call, don't render anything
   if (!isInterpreter) {
-    console.log("InterpreterNotification: Not rendering - Not an interpreter");
     return null;
   }
   
@@ -137,7 +154,7 @@ const InterpreterNotification = () => {
         <div className="fixed bottom-4 right-4 z-50 w-80 bg-background/95 backdrop-blur-md rounded-lg border border-border shadow-lg p-4 animate-in fade-in slide-in-from-right-5">
           <div className="flex justify-between items-start mb-2">
             <div className="flex items-center text-primary gap-2">
-              <BellRing className="h-5 w-5 animate-pulse" />
+              <PhoneIncoming className="h-5 w-5 text-green-500 animate-pulse" />
               <h4 className="font-semibold">Incoming Call</h4>
             </div>
             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={declineCall}>
@@ -171,7 +188,7 @@ const InterpreterNotification = () => {
             <Button 
               variant="default" 
               size="sm" 
-              className="flex-1" 
+              className="flex-1 bg-green-500 hover:bg-green-600" 
               onClick={() => answerCall(incomingCall)}
             >
               Receive Call
