@@ -68,6 +68,7 @@ const InterpreterNotification = () => {
   
   // Function to handle new incoming calls
   const notifyIncomingCall = (callData: CallData) => {
+    console.log("Received call notification:", callData);
     setIncomingCall(callData);
     setIsNotificationVisible(true);
     
@@ -106,7 +107,7 @@ const InterpreterNotification = () => {
   }
   
   return (
-    <div className="fixed top-20 right-4 z-50 w-80 bg-background/95 backdrop-blur-md rounded-lg border border-border shadow-lg p-4 animate-in fade-in slide-in-from-right-5">
+    <div className="fixed bottom-4 right-4 z-50 w-80 bg-background/95 backdrop-blur-md rounded-lg border border-border shadow-lg p-4 animate-in fade-in slide-in-from-right-5">
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center text-primary gap-2">
           <BellRing className="h-5 w-5 animate-pulse" />
@@ -146,7 +147,7 @@ const InterpreterNotification = () => {
           className="flex-1" 
           onClick={() => answerCall(incomingCall)}
         >
-          Answer Call
+          Receive Call
         </Button>
       </div>
     </div>

@@ -19,6 +19,24 @@ import InterpreterNotification from "@/components/notifications/InterpreterNotif
 const queryClient = new QueryClient();
 
 function App() {
+  // Set up console logging for debugging pending call data
+  useEffect(() => {
+    const checkPendingCall = () => {
+      const pendingCall = localStorage.getItem('pendingCall');
+      if (pendingCall) {
+        console.log("Pending call in localStorage:", JSON.parse(pendingCall));
+      }
+    };
+    
+    // Check on initial load
+    checkPendingCall();
+    
+    // And set up interval to check regularly
+    const interval = setInterval(checkPendingCall, 5000);
+    
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <>
       <QueryClientProvider client={queryClient}>
@@ -27,7 +45,6 @@ function App() {
             <Toaster />
             <Sonner />
             <Router>
-              <InterpreterNotification />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/call" element={<Call />} />
@@ -40,6 +57,7 @@ function App() {
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <MockUserPanel />
+              <InterpreterNotification />
             </Router>
           </CallProvider>
         </TooltipProvider>
@@ -47,5 +65,7 @@ function App() {
     </>
   );
 }
+
+import { useEffect } from 'react';
 
 export default App;
