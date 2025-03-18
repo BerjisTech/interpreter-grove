@@ -33,16 +33,13 @@ export function Certifications() {
   const { role } = useUserRole();
   
   const handleCertificationAdded = (certification: any) => {
-    // Here you would typically update your certifications list
     console.log('New certification added:', certification);
   };
 
   const handleRequirementAdded = (requirement: any) => {
-    // Here you would typically update your requirements list
     console.log('New requirement added:', requirement);
   };
 
-  // Only admin, lsp, and freelancer should see this page
   if (role === 'client') {
     return (
       <div className="flex h-[70vh] w-full flex-col items-center justify-center">
@@ -456,4 +453,3 @@ export function Certifications() {
     </div>
   );
 }
-
