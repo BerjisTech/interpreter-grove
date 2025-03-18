@@ -1,5 +1,5 @@
 
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useUserRole } from '@/contexts/UserRoleContext';
 import { 
   Sidebar, 
@@ -44,6 +44,7 @@ interface NavItem {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { role } = useUserRole();
+  const location = useLocation();
   
   const navItems: NavItem[] = [
     { 
@@ -104,6 +105,17 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const filteredNavItems = navItems.filter(item => item.roles.includes(role));
 
+  // Helper function to check if a link is active
+  const isActive = (path: string) => {
+    // For the Dashboard home path specifically
+    if (path === '/dashboard' && location.pathname === '/dashboard') {
+      return true;
+    }
+    // For other paths, check if the current path starts with the nav item path
+    // This handles nested routes like /dashboard/jobs/123
+    return path !== '/dashboard' && location.pathname.startsWith(path);
+  };
+
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="flex w-full min-h-screen">
@@ -121,9 +133,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <SidebarMenu>
                   {filteredNavItems.map((item) => (
                     <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton asChild tooltip={item.title}>
+                      <SidebarMenuButton 
+                        asChild 
+                        tooltip={item.title}
+                        className={isActive(item.href) ? "bg-primary/10 text-primary font-medium" : ""}
+                        isActive={isActive(item.href)}
+                      >
                         <Link to={item.href}>
-                          <item.icon />
+                          <item.icon className={isActive(item.href) ? "text-primary" : ""} />
                           <span>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
@@ -139,17 +156,27 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild tooltip="LSP Management">
+                      <SidebarMenuButton 
+                        asChild 
+                        tooltip="LSP Management"
+                        className={isActive('/dashboard/lsp-management') ? "bg-primary/10 text-primary font-medium" : ""}
+                        isActive={isActive('/dashboard/lsp-management')}
+                      >
                         <Link to="/dashboard/lsp-management">
-                          <Building2 />
+                          <Building2 className={isActive('/dashboard/lsp-management') ? "text-primary" : ""} />
                           <span>LSP Management</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                      <SidebarMenuButton asChild tooltip="Verification">
+                      <SidebarMenuButton 
+                        asChild 
+                        tooltip="Verification"
+                        className={isActive('/dashboard/verification') ? "bg-primary/10 text-primary font-medium" : ""}
+                        isActive={isActive('/dashboard/verification')}
+                      >
                         <Link to="/dashboard/verification">
-                          <BadgeCheck />
+                          <BadgeCheck className={isActive('/dashboard/verification') ? "text-primary" : ""} />
                           <span>Verification</span>
                         </Link>
                       </SidebarMenuButton>

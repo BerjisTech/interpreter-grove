@@ -1,5 +1,5 @@
 
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { UserRoleProvider } from '@/contexts/UserRoleContext';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import DashboardHome from '@/components/dashboard/DashboardHome';
@@ -18,14 +18,17 @@ const Dashboard = () => {
       <DashboardLayout>
         <Routes>
           <Route path="/" element={<DashboardHome />} />
-          <Route path="/jobs" element={<Jobs />} />
-          <Route path="/revenue" element={<Revenue />} />
-          <Route path="/complaints" element={<Complaints />} />
-          <Route path="/vetting" element={<Vetting />} />
-          <Route path="/membership" element={<Membership />} />
-          <Route path="/account" element={<Account />} />
-          <Route path="/certifications" element={<Certifications />} />
-          <Route path="/support" element={<Support />} />
+          <Route path="/jobs/*" element={<Jobs />} />
+          <Route path="/revenue/*" element={<Revenue />} />
+          <Route path="/complaints/*" element={<Complaints />} />
+          <Route path="/vetting/*" element={<Vetting />} />
+          <Route path="/membership/*" element={<Membership />} />
+          <Route path="/account/*" element={<Account />} />
+          <Route path="/certifications/*" element={<Certifications />} />
+          <Route path="/support/*" element={<Support />} />
+          <Route path="/lsp-management/*" element={<DashboardHome />} /> {/* Placeholder */}
+          <Route path="/verification/*" element={<DashboardHome />} /> {/* Placeholder */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </DashboardLayout>
     </UserRoleProvider>
