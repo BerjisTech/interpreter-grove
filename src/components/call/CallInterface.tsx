@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { 
   MicIcon, MicOffIcon, VideoIcon, VideoOffIcon, 
@@ -635,5 +636,8 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
           </div>
         </DialogContent>
       </Dialog>
-   
+    </div>
+  );
+};
 
+export default CallInterface;
