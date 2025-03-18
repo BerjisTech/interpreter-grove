@@ -13,7 +13,8 @@ import {
   Users,
   User,
   Award,
-  Languages
+  Languages,
+  Building2
 } from 'lucide-react';
 
 interface StatCardProps {
