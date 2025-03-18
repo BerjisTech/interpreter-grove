@@ -3,11 +3,14 @@ import { useState, useEffect } from 'react';
 import { 
   MicIcon, MicOffIcon, VideoIcon, VideoOffIcon, 
   PhoneOffIcon, MessageSquare, Users, SettingsIcon,
-  MonitorIcon, Volume2Icon, Volume1Icon, VolumeXIcon, Video
+  MonitorIcon, Volume2Icon, Volume1Icon, VolumeXIcon, Video,
+  User, UserCheck, BellIcon, PanelLeftIcon, PenLine
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface CallInterfaceProps {
   onEndCall?: () => void;
@@ -29,6 +32,19 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
   const [volume, setVolume] = useState([50]);
   const [callDuration, setCallDuration] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Mock participants data
+  const participants = [
+    { id: '1', name: 'You', role: 'Patient', isYou: true },
+    { id: '2', name: interpreter?.name || 'Interpreter', role: 'Interpreter', isInterpreter: true },
+  ];
+
+  // Settings options
+  const [notifications, setNotifications] = useState(true);
+  const [highContrast, setHighContrast] = useState(false);
+  const [autoCaption, setAutoCaption] = useState(true);
   
   // Simulate connection
   useEffect(() => {
@@ -82,6 +98,22 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
   const handleEndCall = () => {
     toast.error('Call ended');
     if (onEndCall) onEndCall();
+  };
+  
+  // Toggle participants panel
+  const toggleParticipants = () => {
+    // Close other panels first
+    setIsChatOpen(false);
+    setIsSettingsOpen(false);
+    setIsParticipantsOpen(!isParticipantsOpen);
+  };
+  
+  // Toggle settings panel
+  const toggleSettings = () => {
+    // Close other panels first
+    setIsChatOpen(false);
+    setIsParticipantsOpen(false);
+    setIsSettingsOpen(!isSettingsOpen);
   };
   
   // Volume Icon based on volume level
@@ -201,7 +233,11 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
             <Button 
               variant={isChatOpen ? "secondary" : "outline"}
               size="icon"
-              onClick={() => setIsChatOpen(!isChatOpen)}
+              onClick={() => {
+                setIsParticipantsOpen(false);
+                setIsSettingsOpen(false);
+                setIsChatOpen(!isChatOpen);
+              }}
               className="rounded-full h-10 w-10"
             >
               <MessageSquare className="h-5 w-5" />
@@ -209,18 +245,20 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
             
             {/* Participants */}
             <Button 
-              variant="outline"
+              variant={isParticipantsOpen ? "secondary" : "outline"}
               size="icon"
+              onClick={toggleParticipants}
               className="rounded-full h-10 w-10"
             >
               <Users className="h-5 w-5" />
             </Button>
             
-            {/* More options */}
+            {/* Settings */}
             <div className="hidden sm:block">
               <Button 
-                variant="outline"
+                variant={isSettingsOpen ? "secondary" : "outline"}
                 size="icon"
+                onClick={toggleSettings}
                 className="rounded-full h-10 w-10"
               >
                 <SettingsIcon className="h-5 w-5" />
@@ -259,6 +297,153 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
             <Button variant="ghost" size="sm" className="h-full rounded-none px-3">
               Send
             </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Participants sidebar */}
+      {isParticipantsOpen && (
+        <div className="absolute right-0 top-0 bottom-0 w-80 bg-background/95 backdrop-blur-md border-l border-border shadow-xl p-4 animate-slide-in-right">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-medium">Participants ({participants.length})</h3>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setIsParticipantsOpen(false)}
+              className="h-8 w-8 p-0"
+            >
+              &times;
+            </Button>
+          </div>
+          
+          <div className="space-y-3">
+            {participants.map((participant) => (
+              <div key={participant.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    {participant.isYou ? (
+                      <User className="h-5 w-5 text-primary" />
+                    ) : (
+                      <UserCheck className="h-5 w-5 text-primary" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-medium text-sm">
+                      {participant.name} {participant.isYou && "(You)"}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{participant.role}</div>
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  {participant.isInterpreter && (
+                    <div className="text-xs bg-blue-500/10 text-blue-500 py-1 px-2 rounded-full">
+                      Interpreter
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="absolute bottom-4 left-0 right-0 px-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full border-dashed"
+              onClick={() => toast.info("Invite functionality not implemented yet")}
+            >
+              <PenLine className="h-4 w-4 mr-1" />
+              Copy invite link
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Settings sidebar */}
+      {isSettingsOpen && (
+        <div className="absolute right-0 top-0 bottom-0 w-80 bg-background/95 backdrop-blur-md border-l border-border shadow-xl p-4 animate-slide-in-right">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-medium">Settings</h3>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setIsSettingsOpen(false)}
+              className="h-8 w-8 p-0"
+            >
+              &times;
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Call Settings</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <BellIcon className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="notifications" className="text-sm">Sound notifications</Label>
+                    </div>
+                    <Switch 
+                      id="notifications" 
+                      checked={notifications} 
+                      onCheckedChange={setNotifications}
+                      onClick={() => toast.success("Notification settings updated")}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <PanelLeftIcon className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="contrast" className="text-sm">High contrast mode</Label>
+                    </div>
+                    <Switch 
+                      id="contrast" 
+                      checked={highContrast} 
+                      onCheckedChange={setHighContrast}
+                      onClick={() => toast.success("Display settings updated")}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <PenLine className="h-4 w-4 text-muted-foreground" />
+                      <Label htmlFor="captions" className="text-sm">Auto-captions</Label>
+                    </div>
+                    <Switch 
+                      id="captions" 
+                      checked={autoCaption} 
+                      onCheckedChange={setAutoCaption}
+                      onClick={() => toast.success("Caption settings updated")}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Audio</h4>
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="volume-control" className="text-sm">Speaker volume</Label>
+                    <div className="flex items-center space-x-2 mt-2">
+                      <VolumeIcon />
+                      <Slider
+                        id="volume-control"
+                        value={volume}
+                        min={0}
+                        max={100}
+                        step={1}
+                        onValueChange={(value) => {
+                          setVolume(value);
+                          toast.success(`Volume set to ${value[0]}%`);
+                        }}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
