@@ -11,6 +11,9 @@ import Membership from '@/components/dashboard/Membership';
 import Account from '@/components/dashboard/Account';
 import Certifications from '@/components/dashboard/Certifications';
 import Support from '@/components/dashboard/Support';
+import LSPInterpreterManagement from '@/components/dashboard/LSPInterpreterManagement';
+import ClientManagement from '@/components/dashboard/ClientManagement';
+import WorkingWithManagement from '@/components/dashboard/WorkingWithManagement';
 
 const Dashboard = () => {
   return (
@@ -28,6 +31,9 @@ const Dashboard = () => {
           <Route path="/support/*" element={<Support />} />
           <Route path="/lsp-management/*" element={<DashboardHome />} /> {/* Placeholder */}
           <Route path="/verification/*" element={<DashboardHome />} /> {/* Placeholder */}
+          <Route path="/interpreters/*" element={<LSPInterpreterManagement />} />
+          <Route path="/clients/*" element={<ClientManagement />} />
+          <Route path="/working-with/*" element={<WorkingWithManagement />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </DashboardLayout>

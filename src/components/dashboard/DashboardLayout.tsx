@@ -28,6 +28,8 @@ import {
   Building2,
   BadgeCheck,
   LucideIcon,
+  List,
+  Link as LinkIcon
 } from 'lucide-react';
 import RoleSelector from './RoleSelector';
 
@@ -100,6 +102,25 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       icon: Headphones, 
       href: '/dashboard/support', 
       roles: ['admin', 'lsp', 'freelancer', 'client'] 
+    },
+    // New management items
+    { 
+      title: 'Manage Interpreters', 
+      icon: Users, 
+      href: '/dashboard/interpreters', 
+      roles: ['admin', 'lsp'] 
+    },
+    { 
+      title: 'Manage Clients', 
+      icon: List, 
+      href: '/dashboard/clients', 
+      roles: ['admin', 'lsp', 'freelancer'] 
+    },
+    { 
+      title: 'My Providers', 
+      icon: LinkIcon, 
+      href: '/dashboard/working-with', 
+      roles: ['client'] 
     },
   ];
 
