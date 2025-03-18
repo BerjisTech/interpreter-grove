@@ -13,10 +13,10 @@ import {
 import { 
   UserCheck, 
   UserMinus,
-  UserPlus,
   Link as LinkIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AddInterpreterDialog } from './interpreter/AddInterpreterDialog';
 
 interface Interpreter {
   id: string;
@@ -77,6 +77,10 @@ const LSPInterpreterManagement = () => {
     ));
   };
 
+  const handleAddInterpreter = (newInterpreter: Interpreter) => {
+    setInterpreters(prevInterpreters => [...prevInterpreters, newInterpreter]);
+  };
+
   if (role !== 'lsp' && role !== 'admin') {
     return (
       <div className="p-6 text-center">
@@ -90,10 +94,7 @@ const LSPInterpreterManagement = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Manage Interpreters</h1>
-        <Button className="flex items-center gap-2">
-          <UserPlus className="w-4 h-4" />
-          Add Interpreter
-        </Button>
+        <AddInterpreterDialog onInterpreterAdded={handleAddInterpreter} />
       </div>
 
       <div className="flex gap-2 mb-4">
