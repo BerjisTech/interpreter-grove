@@ -1,5 +1,4 @@
-
-import { Check, X, CreditCard, Shield, Star, Clock, BadgeCheck } from "lucide-react";
+import { Check, X, CreditCard, Shield, Star, Clock, BadgeCheck, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -142,7 +141,7 @@ const Pricing = () => {
 
           {/* LSP Options */}
           <div className="bg-card rounded-xl p-8 border border-border shadow-sm">
-            <Building className="h-12 w-12 text-primary mb-6" />
+            <Building2 className="h-12 w-12 text-primary mb-6" />
             <h2 className="text-2xl font-bold mb-4">Language Service Provider Options</h2>
             <p className="text-muted-foreground mb-6">
               Specialized pricing and features for interpretation agencies and language service providers.
