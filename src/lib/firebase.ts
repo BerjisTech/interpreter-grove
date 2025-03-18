@@ -1,6 +1,6 @@
 
 import { initializeApp } from "firebase/app";
-import { getDatabase, connectDatabaseEmulator } from "firebase/database";
+import { getDatabase, ref, connectDatabaseEmulator } from "firebase/database";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -18,11 +18,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
-// Add some error handling for Firebase
-const dbRef = getDatabase(app);
-dbRef.ref = (path) => {
+// Log access to database paths (for debugging)
+const logDatabaseAccess = (path) => {
   console.log(`[Firebase] Accessing database path: ${path}`);
-  return dbRef.ref(path);
+  return ref(database, path);
 };
 
 console.log("[Firebase] Initialized Firebase app with config:", {
@@ -38,4 +37,4 @@ try {
   console.error("[Firebase] Error connecting to Firebase:", error);
 }
 
-export { app, database };
+export { app, database, logDatabaseAccess };
