@@ -1,6 +1,6 @@
 
 import { initializeApp } from "firebase/app";
-import { getDatabase } from "firebase/database";
+import { getDatabase, connectDatabaseEmulator } from "firebase/database";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -17,5 +17,25 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
+
+// Add some error handling for Firebase
+const dbRef = getDatabase(app);
+dbRef.ref = (path) => {
+  console.log(`[Firebase] Accessing database path: ${path}`);
+  return dbRef.ref(path);
+};
+
+console.log("[Firebase] Initialized Firebase app with config:", {
+  projectId: firebaseConfig.projectId,
+  databaseURL: firebaseConfig.databaseURL
+});
+
+// Check if we're in a development environment and if Firebase is connected
+try {
+  database.app.automaticDataCollectionEnabled;
+  console.log("[Firebase] Database connection established");
+} catch (error) {
+  console.error("[Firebase] Error connecting to Firebase:", error);
+}
 
 export { app, database };

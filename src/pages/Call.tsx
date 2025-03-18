@@ -33,6 +33,7 @@ const CallPage = () => {
   // Handle navigation to call with a room ID
   useEffect(() => {
     if (paramRoomId && !roomId) {
+      console.log("Setting room ID from params:", paramRoomId);
       setRoomId(paramRoomId);
     }
   }, [paramRoomId, roomId, setRoomId]);
@@ -48,14 +49,17 @@ const CallPage = () => {
   // Start or join call
   const startCall = async () => {
     try {
+      console.log("Starting call with paramRoomId:", paramRoomId);
       if (paramRoomId) {
         // Join existing call
+        console.log("Joining existing call:", paramRoomId);
         await joinCall(paramRoomId, {
           name: "Client User", // In a real app, this would be from auth
           role: "client"
         });
       } else if (interpreterData) {
         // Create new call
+        console.log("Creating new call with interpreter:", interpreterData.name);
         const newRoomId = await createCall({
           name: "Client User", // In a real app, this would be from auth
           role: "client"
@@ -106,12 +110,21 @@ const CallPage = () => {
   };
   
   useEffect(() => {
-    // Auto-prompt to start call when page loads
+    // Auto-start call when joining via link
+    if (paramRoomId && !callStarted && !isCallActive) {
+      // Small delay to ensure everything is loaded
+      const timer = setTimeout(() => {
+        startCall();
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+    
+    // Auto-prompt to start call when page loads with interpreter data
     const timer = setTimeout(() => {
-      if (!callStarted && (interpreterData || paramRoomId)) {
-        toast(`Ready to ${paramRoomId ? 'join' : 'connect'} ${interpreterData ? `with ${interpreterData.name}` : 'the call'}?`, {
+      if (!callStarted && !isCallActive && interpreterData) {
+        toast(`Ready to connect with ${interpreterData.name}?`, {
           action: {
-            label: paramRoomId ? "Join Call" : "Start Call",
+            label: "Start Call",
             onClick: startCall
           },
         });
@@ -119,7 +132,7 @@ const CallPage = () => {
     }, 1500);
     
     return () => clearTimeout(timer);
-  }, [callStarted, interpreterData, paramRoomId]);
+  }, [callStarted, interpreterData, paramRoomId, isCallActive]);
 
   // When leaving the page, ensure we leave the call
   useEffect(() => {
@@ -135,6 +148,8 @@ const CallPage = () => {
     return <div className="min-h-screen flex items-center justify-center">Redirecting...</div>;
   }
 
+  console.log("CallPage render - callStarted:", callStarted, "isCallActive:", isCallActive);
+
   return (
     <div className="min-h-screen flex flex-col">
       <div className="container mx-auto py-6 px-4">
@@ -149,7 +164,7 @@ const CallPage = () => {
         </Button>
         
         <div className="max-w-5xl mx-auto">
-          {callStarted || isCallActive ? (
+          {(callStarted || isCallActive) ? (
             <div className="rounded-lg overflow-hidden shadow-xl border border-border" style={{ height: "70vh" }}>
               <CallInterface 
                 onEndCall={endCall} 

@@ -53,6 +53,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   // Initialize media streams when joining a call
   useEffect(() => {
     if (roomId && isCallActive) {
+      console.log("Call is active, roomId:", roomId);
       // Setup listeners for participants and messages
       const participantsRef = ref(database, `calls/${roomId}/participants`);
       const messagesRef = ref(database, `calls/${roomId}/messages`);
@@ -66,6 +67,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
             isYou: currentUser?.id === id
           }));
           setParticipants(participantList);
+          console.log("Updated participants:", participantList);
         } else {
           setParticipants([]);
         }
@@ -118,25 +120,43 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
   const initializeLocalStream = async () => {
     try {
+      console.log("Initializing local media stream");
+      
+      // First check if we already have a stream
+      if (localStream) {
+        console.log("Local stream already exists");
+        return;
+      }
+      
+      // Request user media with appropriate constraints
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: true, 
         audio: true 
       });
       
+      console.log("Media stream obtained:", stream);
       setLocalStream(stream);
       
-      // Handle remote stream connection here in a real implementation
-      // This would typically involve WebRTC connection setup
+      // Create a mock remote stream for demo purposes
+      // In a real app, this would be replaced with WebRTC peer connection
+      setTimeout(() => {
+        console.log("Setting mock remote stream");
+        // For demo purposes, we'll use a clone of the local stream as the remote stream
+        const mockRemoteStream = stream.clone();
+        setRemoteStream(mockRemoteStream);
+      }, 2000);
       
     } catch (error) {
       console.error('Error accessing media devices:', error);
-      toast.error('Failed to access camera or microphone');
+      toast.error('Failed to access camera or microphone. Please check your permissions.');
     }
   };
 
   // Create a new call room
   const createCall = async (creator: Omit<Participant, 'id'>): Promise<string> => {
     try {
+      console.log("Creating new call with creator:", creator);
+      
       const callsRef = ref(database, 'calls');
       const newCallRef = push(callsRef);
       const callId = newCallRef.key as string;
@@ -159,6 +179,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       setIsCallActive(true);
       setCurrentUser({ ...creator, id: participantId });
       
+      console.log("Call created with ID:", callId);
       return callId;
     } catch (error) {
       console.error('Error creating call:', error);
@@ -170,11 +191,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   // Join an existing call
   const joinCall = async (callId: string, participant: Omit<Participant, 'id'>): Promise<void> => {
     try {
+      console.log("Joining call:", callId, "as", participant);
+      
       // Check if call exists
       const callRef = ref(database, `calls/${callId}`);
       const snapshot = await get(callRef);
       
       if (!snapshot.exists()) {
+        console.error("Call not found:", callId);
         toast.error('Call not found');
         throw new Error('Call not found');
       }
@@ -193,6 +217,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       setIsCallActive(true);
       setCurrentUser({ ...participant, id: participantId });
       
+      console.log("Successfully joined call:", callId);
       toast.success(`Joined call as ${participant.role}`);
     } catch (error) {
       console.error('Error joining call:', error);
@@ -203,9 +228,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
 
   // Leave the current call
   const leaveCall = async (): Promise<void> => {
-    if (!roomId || !currentUser?.id) return;
+    if (!roomId || !currentUser?.id) {
+      console.log("No active call to leave");
+      return;
+    }
     
     try {
+      console.log("Leaving call:", roomId);
+      
       // Remove participant from the call
       await remove(ref(database, `calls/${roomId}/participants/${currentUser.id}`));
       
@@ -215,6 +245,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       
       if (!snapshot.exists() || Object.keys(snapshot.val()).length === 0) {
         // No participants left, clean up the call
+        console.log("No participants left, removing call:", roomId);
         await remove(ref(database, `calls/${roomId}`));
       }
       
@@ -224,13 +255,18 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         setLocalStream(null);
       }
       
-      setRemoteStream(null);
+      if (remoteStream) {
+        remoteStream.getTracks().forEach(track => track.stop());
+        setRemoteStream(null);
+      }
+      
       setRoomId(null);
       setIsCallActive(false);
       setCurrentUser(null);
       setParticipants([]);
       setMessages([]);
       
+      console.log("Successfully left call");
       toast.success('Left the call');
     } catch (error) {
       console.error('Error leaving call:', error);
