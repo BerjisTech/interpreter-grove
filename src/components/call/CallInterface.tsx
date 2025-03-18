@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { 
   MicIcon, MicOffIcon, VideoIcon, VideoOffIcon, 
@@ -256,7 +255,7 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover mirror"
+              className="w-full h-full object-cover transform scale-x-[-1]"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -636,15 +635,5 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
           </div>
         </DialogContent>
       </Dialog>
-      
-      {/* Add a style for mirroring your own video */}
-      <style jsx>{`
-        .mirror {
-          transform: scaleX(-1);
-        }
-      `}</style>
-    </div>
-  );
-};
+   
 
-export default CallInterface;
