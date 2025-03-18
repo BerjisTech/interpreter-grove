@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useUserRole } from '@/contexts/UserRoleContext';
@@ -13,10 +12,10 @@ import {
 import { 
   UserCheck, 
   UserMinus,
-  UserPlus,
   Link as LinkIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AddClientDialog } from './client/AddClientDialog';
 
 interface Client {
   id: string;
@@ -77,6 +76,10 @@ const ClientManagement = () => {
     ));
   };
 
+  const handleAddClient = (newClient: Client) => {
+    setClients(prevClients => [...prevClients, newClient]);
+  };
+
   if (role !== 'lsp' && role !== 'admin' && role !== 'freelancer') {
     return (
       <div className="p-6 text-center">
@@ -90,10 +93,7 @@ const ClientManagement = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Manage Clients</h1>
-        <Button className="flex items-center gap-2">
-          <UserPlus className="w-4 h-4" />
-          Add Client
-        </Button>
+        <AddClientDialog onClientAdded={handleAddClient} />
       </div>
 
       <div className="flex gap-2 mb-4">
