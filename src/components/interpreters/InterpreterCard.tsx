@@ -2,6 +2,8 @@
 import { StarIcon, Video, Phone, Clock, LanguagesIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface InterpreterCardProps {
   interpreter: {
@@ -18,6 +20,8 @@ interface InterpreterCardProps {
 }
 
 const InterpreterCard = ({ interpreter }: InterpreterCardProps) => {
+  const navigate = useNavigate();
+
   const renderStars = (rating: number) => {
     return Array(5)
       .fill(0)
@@ -33,6 +37,21 @@ const InterpreterCard = ({ interpreter }: InterpreterCardProps) => {
           }`}
         />
       ));
+  };
+
+  const handleCallInitiate = (type: 'voice' | 'video') => {
+    if (!interpreter.online) {
+      toast.error(`${interpreter.name} is currently offline. Please try again later.`);
+      return;
+    }
+
+    // Navigate to call page with interpreter data
+    navigate('/call', { 
+      state: { 
+        interpreter,
+        callType: type 
+      } 
+    });
   };
 
   return (
@@ -83,11 +102,22 @@ const InterpreterCard = ({ interpreter }: InterpreterCardProps) => {
         </div>
         
         <div className="flex space-x-2 mt-4">
-          <Button size="sm" variant="outline" className="flex-1">
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="flex-1"
+            onClick={() => handleCallInitiate('voice')}
+            disabled={!interpreter.online}
+          >
             <Phone className="h-4 w-4 mr-1.5" />
             <span>Call</span>
           </Button>
-          <Button size="sm" className="flex-1">
+          <Button 
+            size="sm" 
+            className="flex-1"
+            onClick={() => handleCallInitiate('video')}
+            disabled={!interpreter.online}
+          >
             <Video className="h-4 w-4 mr-1.5" />
             <span>Video</span>
           </Button>

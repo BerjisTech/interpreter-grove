@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   MicIcon, MicOffIcon, VideoIcon, VideoOffIcon, 
   PhoneOffIcon, MessageSquare, Users, SettingsIcon,
-  MonitorIcon, Volume2Icon, Volume1Icon, VolumeXIcon
+  MonitorIcon, Volume2Icon, Volume1Icon, VolumeXIcon, Video
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -11,11 +11,20 @@ import { toast } from 'sonner';
 
 interface CallInterfaceProps {
   onEndCall?: () => void;
+  interpreter?: {
+    id: string;
+    name: string;
+    languages: string[];
+    image: string;
+    online: boolean;
+    [key: string]: any;
+  };
+  callType?: 'voice' | 'video';
 }
 
-const CallInterface = ({ onEndCall }: CallInterfaceProps) => {
+const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInterfaceProps) => {
   const [isMicOn, setIsMicOn] = useState(true);
-  const [isVideoOn, setIsVideoOn] = useState(true);
+  const [isVideoOn, setIsVideoOn] = useState(callType === 'video');
   const [isConnected, setIsConnected] = useState(false);
   const [volume, setVolume] = useState([50]);
   const [callDuration, setCallDuration] = useState(0);
@@ -25,11 +34,11 @@ const CallInterface = ({ onEndCall }: CallInterfaceProps) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsConnected(true);
-      toast.success('Interpreter connected to your call');
+      toast.success(`${interpreter?.name || 'Interpreter'} connected to your call`);
     }, 3000);
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [interpreter]);
   
   // Call timer
   useEffect(() => {
@@ -61,6 +70,10 @@ const CallInterface = ({ onEndCall }: CallInterfaceProps) => {
   
   // Toggle video
   const toggleVideo = () => {
+    if (callType === 'voice') {
+      toast.error('This is a voice-only call');
+      return;
+    }
     setIsVideoOn(!isVideoOn);
     toast(isVideoOn ? 'Camera turned off' : 'Camera turned on');
   };
@@ -96,8 +109,8 @@ const CallInterface = ({ onEndCall }: CallInterfaceProps) => {
         <div className="absolute inset-0 flex items-center justify-center">
           {isConnected ? (
             <img 
-              src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
-              alt="Interpreter" 
+              src={interpreter?.image || "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"} 
+              alt={interpreter?.name || "Interpreter"} 
               className="w-full h-full object-cover"
             />
           ) : (
@@ -108,9 +121,17 @@ const CallInterface = ({ onEndCall }: CallInterfaceProps) => {
           )}
         </div>
         
+        {/* Interpreter info */}
+        {isConnected && (
+          <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 text-white text-sm">
+            <div className="font-medium">{interpreter?.name || "Interpreter"}</div>
+            <div className="text-xs text-white/70">{interpreter?.languages?.join(', ') || "Multilingual"}</div>
+          </div>
+        )}
+        
         {/* Self video (user) */}
         <div className="absolute bottom-4 right-4 w-40 h-32 bg-zinc-800 rounded-lg overflow-hidden border border-white/20 shadow-lg">
-          {isVideoOn ? (
+          {isVideoOn && callType === 'video' ? (
             <img 
               src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" 
               alt="You" 
@@ -128,15 +149,17 @@ const CallInterface = ({ onEndCall }: CallInterfaceProps) => {
       <div className="bg-background/90 backdrop-blur-md py-4 px-6 rounded-b-lg border-t border-border shadow-soft">
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            {/* Video toggle */}
-            <Button 
-              variant={isVideoOn ? "outline" : "secondary"}
-              size="icon"
-              onClick={toggleVideo}
-              className="rounded-full h-10 w-10"
-            >
-              {isVideoOn ? <VideoIcon className="h-5 w-5" /> : <VideoOffIcon className="h-5 w-5" />}
-            </Button>
+            {/* Video toggle - only for video calls */}
+            {callType === 'video' && (
+              <Button 
+                variant={isVideoOn ? "outline" : "secondary"}
+                size="icon"
+                onClick={toggleVideo}
+                className="rounded-full h-10 w-10"
+              >
+                {isVideoOn ? <VideoIcon className="h-5 w-5" /> : <VideoOffIcon className="h-5 w-5" />}
+              </Button>
+            )}
             
             {/* Mic toggle */}
             <Button 
