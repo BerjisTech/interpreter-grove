@@ -97,13 +97,13 @@ const InterpreterNotification = () => {
     window.addEventListener('incomingCall', handleIncomingCallEvent as EventListener);
     
     // Check for existing calls immediately and on interval
-    checkExistingCall();
+    setTimeout(checkExistingCall, 1500); // Delayed initial check
     const checkInterval = setInterval(checkExistingCall, 5000);
     
     // Listen for storage events (for cross-tab functionality)
     const handleStorageChange = (event: StorageEvent) => {
       console.log("InterpreterNotification: Storage event", event.key, event.newValue);
-      if (event.key === 'pendingCall' && event.newValue) {
+      if ((event.key === 'pendingCall' || event.key === 'pendingCallBroadcast') && event.newValue) {
         try {
           const callData = JSON.parse(event.newValue);
           if (callData && callData.roomId) {
@@ -143,7 +143,6 @@ const InterpreterNotification = () => {
     toast.success('Call declined');
   };
   
-  // If not logged in as interpreter or no incoming call, don't render anything
   if (!isInterpreter) {
     return null;
   }

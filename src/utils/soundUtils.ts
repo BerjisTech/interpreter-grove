@@ -22,20 +22,29 @@ export const playCallNotification = () => {
 // Method 1: Play with Audio element (most compatible)
 const playWithAudioElement = () => {
   try {
-    // Create a new audio element
+    // Create a new audio element with forced autoplay
     const audio = new Audio('/notification.mp3');
     audio.volume = 1.0; // Maximum volume
+    audio.muted = false;
     
-    // Try to play the sound
+    // Try to play the sound with user interaction simulation
     const playPromise = audio.play();
     
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
           console.log("Notification sound started playing successfully (Audio element)");
+          
+          // Ensure volume is maxed after playback starts
+          setTimeout(() => {
+            audio.volume = 1.0;
+          }, 100);
         })
         .catch(err => {
           console.error('Error playing notification with Audio element:', err);
+          
+          // On failure, try again with Web Audio API
+          playWithAudioContext();
         });
     }
   } catch (error) {
@@ -54,6 +63,11 @@ const playWithAudioContext = () => {
     }
     
     const audioContext = new AudioContext();
+    
+    // Force resume the audioContext (required by some browsers)
+    if (audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
     
     // Fetch the audio file
     fetch('/notification.mp3')

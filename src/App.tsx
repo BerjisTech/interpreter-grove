@@ -24,12 +24,20 @@ function App() {
   useEffect(() => {
     const checkPendingCall = () => {
       const pendingCall = localStorage.getItem('pendingCall');
+      console.log("Checking for pending call in localStorage:", pendingCall);
+      
       if (pendingCall) {
-        console.log("Pending call in localStorage:", JSON.parse(pendingCall));
+        console.log("Pending call found in localStorage:", JSON.parse(pendingCall));
         
         try {
-          // Dispatch a custom event to notify the InterpreterNotification component
+          // Parse the call data
           const callData = JSON.parse(pendingCall);
+          
+          // Add timestamp if missing
+          if (!callData.timestamp) {
+            callData.timestamp = Date.now();
+            localStorage.setItem('pendingCall', JSON.stringify(callData));
+          }
           
           // Only broadcast if the call is recent (within the last 5 minutes)
           const now = Date.now();
@@ -38,7 +46,20 @@ function App() {
           
           if (now - callTime < fiveMinutesInMs) {
             console.log("Broadcasting recent incoming call:", callData);
-            window.dispatchEvent(new CustomEvent('incomingCall', { detail: callData }));
+            
+            // Create a custom event to notify interpreter
+            const callEvent = new CustomEvent('incomingCall', { 
+              detail: callData,
+              bubbles: true 
+            });
+            
+            // Dispatch the event globally
+            window.dispatchEvent(callEvent);
+            
+            // Also broadcast via storage event for cross-tab notification
+            const tempStorage = { ...callData, lastBroadcast: now };
+            localStorage.setItem('pendingCallBroadcast', JSON.stringify(tempStorage));
+            localStorage.removeItem('pendingCallBroadcast');
           } else {
             console.log("Found expired call, removing from storage");
             localStorage.removeItem('pendingCall');
@@ -50,8 +71,8 @@ function App() {
       }
     };
     
-    // Check on initial load
-    checkPendingCall();
+    // Check on initial load with a small delay to ensure components are mounted
+    setTimeout(checkPendingCall, 1000);
     
     // And set up interval to check regularly
     const interval = setInterval(checkPendingCall, 3000);
@@ -59,16 +80,40 @@ function App() {
     // Set up listener for storage events (for cross-tab functionality)
     const handleStorageChange = (event) => {
       if (event.key === 'pendingCall' && event.newValue) {
-        console.log("Storage event detected for pendingCall");
+        console.log("Storage event detected for pendingCall:", event.newValue);
         checkPendingCall();
       }
     };
     
     window.addEventListener('storage', handleStorageChange);
     
+    // Listen to call creation events from CallContext
+    const handleCallCreated = (event) => {
+      console.log("Call created event detected:", event.detail);
+      if (event.detail && event.detail.roomId) {
+        // Store call info for interpreter notification
+        const callInfo = {
+          roomId: event.detail.roomId,
+          callerId: event.detail.callerId || 'unknown',
+          callerName: event.detail.callerName || 'Client',
+          timestamp: Date.now(),
+          callType: event.detail.callType || 'video'
+        };
+        
+        console.log("Storing new call in localStorage:", callInfo);
+        localStorage.setItem('pendingCall', JSON.stringify(callInfo));
+        
+        // Immediately check for pending calls to trigger notification
+        checkPendingCall();
+      }
+    };
+    
+    window.addEventListener('callCreated', handleCallCreated);
+    
     return () => {
       clearInterval(interval);
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('callCreated', handleCallCreated);
     };
   }, []);
 

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { database } from '@/lib/firebase';
 import { ref, onValue, set, push, child, get, remove, onDisconnect, off } from 'firebase/database';
@@ -19,7 +18,6 @@ interface Participant {
   isInterpreter?: boolean;
 }
 
-// Interface for WebRTC signaling data
 interface SignalingData {
   type: 'offer' | 'answer' | 'ice-candidate';
   sender: string;
@@ -64,14 +62,12 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionEstablished, setConnectionEstablished] = useState(false);
   
-  // WebRTC peer connection
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteStreamRef = useRef<MediaStream | null>(null);
   const signalingSenderRef = useRef<string | null>(null);
   const signalingSendingCompleteRef = useRef<boolean>(false);
 
-  // RTCPeerConnection configuration (includes free STUN servers)
   const rtcConfig = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
@@ -80,11 +76,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     ]
   };
 
-  // Initialize media streams when joining a call
   useEffect(() => {
     if (roomId && isCallActive) {
       console.log("Call is active, roomId:", roomId);
-      // Setup listeners for participants and messages
       const participantsRef = ref(database, `calls/${roomId}/participants`);
       const messagesRef = ref(database, `calls/${roomId}/messages`);
       
@@ -99,11 +93,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           setParticipants(participantList);
           console.log("Updated participants:", participantList);
           
-          // If we have two participants, initiate WebRTC if not already started
           if (participantList.length === 2 && !connectionEstablished && !isConnecting) {
             const otherParticipant = participantList.find(p => !p.isYou);
             if (otherParticipant && currentUser) {
-              // Initialize WebRTC connection
               setupWebRTCConnection(currentUser.id, otherParticipant.id);
             }
           }
@@ -125,26 +117,22 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         }
       });
       
-      // Initialize local media stream
       initializeLocalStream();
       
       return () => {
         unsubParticipants();
         unsubMessages();
         
-        // Clean up WebRTC connection
         cleanupWebRTCConnection();
       };
     }
   }, [roomId, isCallActive, currentUser]);
   
-  // Setup WebRTC signaling listeners
   useEffect(() => {
     if (roomId && currentUser) {
       console.log("Setting up signaling channel for roomId:", roomId);
       const signalingRef = ref(database, `calls/${roomId}/signaling`);
       
-      // Listen for signaling messages
       onValue(signalingRef, (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
@@ -152,8 +140,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         Object.entries(data).forEach(([key, value]) => {
           const signal = value as SignalingData;
           
-          // Only process signals where we are the receiver or that are ICE candidates
-          // for our existing peer connection after we've sent our offer/answer
           if ((signal.receiver === currentUser.id || 
               (signal.type === 'ice-candidate' && signalingSendingCompleteRef.current)) && 
               signal.sender !== currentUser.id) {
@@ -170,7 +156,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     }
   }, [roomId, currentUser]);
   
-  // Function to handle incoming signaling messages
   const handleSignalingMessage = async (signal: SignalingData, signalKey: string) => {
     try {
       if (!peerConnectionRef.current) {
@@ -187,7 +172,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           const answer = await peerConnectionRef.current.createAnswer();
           await peerConnectionRef.current.setLocalDescription(answer);
           
-          // Send the answer back
           await sendSignalingMessage({
             type: 'answer',
             sender: currentUser!.id,
@@ -219,7 +203,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           break;
       }
       
-      // Clean up the processed signal
       const signalRef = ref(database, `calls/${roomId}/signaling/${signalKey}`);
       remove(signalRef);
     } catch (error) {
@@ -227,7 +210,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     }
   };
   
-  // Function to send signaling messages
   const sendSignalingMessage = async (signal: SignalingData) => {
     if (!roomId) return;
     
@@ -242,10 +224,8 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Function to setup WebRTC peer connection
   const setupWebRTCConnection = async (localParticipantId: string, remoteParticipantId: string) => {
     try {
-      // Don't setup if already connecting or connected
       if (isConnecting || connectionEstablished) {
         console.log("Already connecting or connected, skipping setup");
         return;
@@ -258,16 +238,13 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         cleanupWebRTCConnection();
       }
       
-      // Wait for local stream to be ready
       if (!localStreamRef.current) {
         console.log("Waiting for local stream...");
         await initializeLocalStream();
       }
       
-      // Create a new RTCPeerConnection
       peerConnectionRef.current = new RTCPeerConnection(rtcConfig);
       
-      // Set up event handlers
       peerConnectionRef.current.onicecandidate = (event) => {
         if (event.candidate) {
           console.log("Sending ICE candidate");
@@ -304,7 +281,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         }
       };
       
-      // Add local tracks to the connection
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => {
           if (localStreamRef.current && peerConnectionRef.current) {
@@ -314,8 +290,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         });
       }
       
-      // Create and send offer (if we are the one initiating)
-      const isInitiator = localParticipantId < remoteParticipantId; // Simple rule to decide who initiates
+      const isInitiator = localParticipantId < remoteParticipantId;
       
       if (isInitiator) {
         console.log("Creating and sending offer as initiator");
@@ -342,7 +317,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Cleanup WebRTC connection
   const cleanupWebRTCConnection = () => {
     if (peerConnectionRef.current) {
       console.log("Cleaning up WebRTC connection");
@@ -363,7 +337,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     signalingSendingCompleteRef.current = false;
   };
 
-  // Effect to handle mic and video toggles
   useEffect(() => {
     if (localStream) {
       localStream.getAudioTracks().forEach(track => {
@@ -376,7 +349,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isMicOn, isVideoOn, localStream]);
 
-  // Clean up resources when component unmounts
   useEffect(() => {
     return () => {
       if (localStream) {
@@ -390,13 +362,11 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Initializing local media stream");
       
-      // First check if we already have a stream
       if (localStreamRef.current) {
         console.log("Local stream already exists");
         return localStreamRef.current;
       }
       
-      // Request user media with appropriate constraints
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: true, 
         audio: true 
@@ -413,7 +383,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Create a new call room
   const createCall = async (creator: Omit<Participant, 'id'>): Promise<string> => {
     try {
       console.log("Creating new call with creator:", creator);
@@ -426,17 +395,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       const newParticipantRef = push(participantsRef);
       const participantId = newParticipantRef.key as string;
       
-      // Store the caller info
       await set(newParticipantRef, creator);
       
-      // Set call metadata
       await set(ref(database, `calls/${callId}/metadata`), {
         created: Date.now(),
         status: 'waiting',
         type: creator.role === 'interpreter' ? 'interpreter' : 'client'
       });
       
-      // Set cleanup on disconnect
       onDisconnect(newParticipantRef).remove();
       
       setRoomId(callId);
@@ -444,6 +410,19 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       setCurrentUser({ ...creator, id: participantId });
       
       console.log("Call created with ID:", callId);
+      
+      const callEvent = new CustomEvent('callCreated', {
+        detail: {
+          roomId: callId,
+          callerId: participantId,
+          callerName: creator.name,
+          callType: 'video'
+        },
+        bubbles: true
+      });
+      
+      window.dispatchEvent(callEvent);
+      
       return callId;
     } catch (error) {
       console.error('Error creating call:', error);
@@ -452,12 +431,10 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Join an existing call
   const joinCall = async (callId: string, participant: Omit<Participant, 'id'>): Promise<void> => {
     try {
       console.log("Joining call:", callId, "as", participant);
       
-      // Check if call exists
       const callRef = ref(database, `calls/${callId}`);
       const snapshot = await get(callRef);
       
@@ -467,17 +444,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         throw new Error('Call not found');
       }
       
-      // Add participant to the call
       const participantsRef = ref(database, `calls/${callId}/participants`);
       const newParticipantRef = push(participantsRef);
       const participantId = newParticipantRef.key as string;
       
       await set(newParticipantRef, participant);
       
-      // Update call status
       await set(ref(database, `calls/${callId}/metadata/status`), 'active');
       
-      // Set cleanup on disconnect
       onDisconnect(newParticipantRef).remove();
       
       setRoomId(callId);
@@ -493,7 +467,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Leave the current call
   const leaveCall = async (): Promise<void> => {
     if (!roomId || !currentUser?.id) {
       console.log("No active call to leave");
@@ -503,23 +476,17 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Leaving call:", roomId);
       
-      // Clean up WebRTC connection first
       cleanupWebRTCConnection();
       
-      // Remove participant from the call
       await remove(ref(database, `calls/${roomId}/participants/${currentUser.id}`));
       
-      // Check if there are any participants left
       const participantsRef = ref(database, `calls/${roomId}/participants`);
       const snapshot = await get(participantsRef);
       
       if (!snapshot.exists() || Object.keys(snapshot.val()).length === 0) {
-        // No participants left, clean up the call
-        console.log("No participants left, removing call:", roomId);
         await remove(ref(database, `calls/${roomId}`));
       }
       
-      // Clean up local state
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop());
         localStreamRef.current = null;
@@ -540,7 +507,6 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Send a message in the call
   const sendMessage = async (text: string, sender: string): Promise<void> => {
     if (!roomId) return;
     
@@ -559,12 +525,10 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Toggle microphone
   const toggleMic = () => {
     setIsMicOn(prev => !prev);
   };
 
-  // Toggle video
   const toggleVideo = () => {
     setIsVideoOn(prev => !prev);
   };
@@ -599,4 +563,3 @@ export const useCall = () => {
   }
   return context;
 };
-
