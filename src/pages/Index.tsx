@@ -6,6 +6,7 @@ import { useRef } from "react";
 import { ArrowDown, MapPin } from "lucide-react";
 import { Interpreter } from "@/types/interpreter";
 import InterpreterGrid from "@/components/interpreters/InterpreterGrid";
+import { Link } from "react-router-dom";
 
 const interpreters: Interpreter[] = [
   {
@@ -115,8 +116,10 @@ const Index = () => {
         
         {/* View More Button */}
         <div className="text-center mt-12">
-          <Button size="lg">
-            View All Interpreters
+          <Button size="lg" asChild>
+            <Link to="/interpreters">
+              View All Interpreters
+            </Link>
           </Button>
         </div>
       </div>
