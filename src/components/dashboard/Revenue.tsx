@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { useUserRole } from '@/contexts/UserRoleContext';
 import { 
   Card, 
@@ -24,11 +25,30 @@ import {
   Wallet,
   CreditCard,
   DollarSign,
-  TrendingUp
+  TrendingUp,
+  Calendar,
+  PlusCircle,
+  FileDown
 } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
+import { RevenueActionDialog } from './revenue/RevenueActionDialog';
+import { slideUpVariants } from '@/utils/animations';
 
 const Revenue = () => {
   const { role } = useUserRole();
+  const { toast } = useToast();
+  
+  // Dialog states
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isFeesDialogOpen, setIsFeesDialogOpen] = useState(false);
+  const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
+  const [isBillingHistoryOpen, setIsBillingHistoryOpen] = useState(false);
+
+  // Animations for staggered appearance
+  const getAnimationDelay = (index: number) => ({
+    style: { animationDelay: `${index * 100}ms` },
+    className: slideUpVariants.visible
+  });
   
   // Only admin, lsp, and freelancer should see this page
   if (role === 'client') {
@@ -42,6 +62,14 @@ const Revenue = () => {
     );
   }
 
+  const handleBillingHistory = () => {
+    toast({
+      title: "Billing History",
+      description: "Your billing history will be available soon.",
+    });
+    setIsBillingHistoryOpen(true);
+  };
+
   const pageTitle = role === 'admin' 
     ? 'Platform Revenue' 
     : role === 'lsp' 
@@ -53,11 +81,18 @@ const Revenue = () => {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">{pageTitle}</h1>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button 
+            variant="outline"
+            onClick={() => setIsExportDialogOpen(true)}
+            className="transition-all hover:shadow-md"
+          >
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button>
+          <Button 
+            onClick={() => role === 'admin' ? setIsFeesDialogOpen(true) : setIsWithdrawDialogOpen(true)}
+            className="transition-all hover:shadow-md hover:scale-105"
+          >
             <Wallet className="mr-2 h-4 w-4" />
             {role === 'admin' ? 'Adjust Fees' : 'Withdraw Funds'}
           </Button>
@@ -65,7 +100,7 @@ const Revenue = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card {...getAnimationDelay(0)}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Total {role === 'admin' ? 'Revenue' : 'Earnings'}
@@ -84,7 +119,7 @@ const Revenue = () => {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card {...getAnimationDelay(1)}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Pending {role === 'admin' ? 'Payouts' : 'Earnings'}</CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
@@ -98,7 +133,7 @@ const Revenue = () => {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card {...getAnimationDelay(2)}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               {role === 'admin' ? 'Platform Fees' : 'Fees Paid'}
@@ -120,7 +155,7 @@ const Revenue = () => {
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card {...getAnimationDelay(3)}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               {role === 'admin' ? 'Active Subscriptions' : 'Monthly Growth'}
@@ -153,13 +188,28 @@ const Revenue = () => {
         </TabsList>
         <TabsContent value="transactions" className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Recent Transactions</CardTitle>
-              <CardDescription>
-                {role === 'admin' 
-                  ? 'Recent platform transactions' 
-                  : 'Your most recent transactions'}
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Recent Transactions</CardTitle>
+                <CardDescription>
+                  {role === 'admin' 
+                    ? 'Recent platform transactions' 
+                    : 'Your most recent transactions'}
+                </CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  toast({
+                    title: "New Transaction",
+                    description: "This feature will be available soon.",
+                  });
+                }}
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Transaction
+              </Button>
             </CardHeader>
             <CardContent>
               <Table>
@@ -170,10 +220,11 @@ const Revenue = () => {
                     <TableHead>Description</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
+                  <TableRow className="hover-scale">
                     <TableCell>#TX-9872</TableCell>
                     <TableCell>May 26, 2023</TableCell>
                     <TableCell>
@@ -185,8 +236,22 @@ const Revenue = () => {
                       +${role === 'admin' ? '15.00' : role === 'lsp' ? '85.00' : '70.00'}
                     </TableCell>
                     <TableCell>Completed</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          toast({
+                            title: "Transaction Details",
+                            description: "Transaction #TX-9872 details will be available soon.",
+                          });
+                        }}
+                      >
+                        View
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                  <TableRow>
+                  <TableRow className="hover-scale">
                     <TableCell>#TX-9865</TableCell>
                     <TableCell>May 24, 2023</TableCell>
                     <TableCell>
@@ -198,9 +263,23 @@ const Revenue = () => {
                       +${role === 'admin' ? '12.50' : role === 'lsp' ? '75.00' : '62.50'}
                     </TableCell>
                     <TableCell>Completed</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          toast({
+                            title: "Transaction Details",
+                            description: "Transaction #TX-9865 details will be available soon.",
+                          });
+                        }}
+                      >
+                        View
+                      </Button>
+                    </TableCell>
                   </TableRow>
                   {role !== 'admin' && (
-                    <TableRow>
+                    <TableRow className="hover-scale">
                       <TableCell>#TX-OUT-452</TableCell>
                       <TableCell>May 20, 2023</TableCell>
                       <TableCell>Withdrawal to bank account</TableCell>
@@ -208,6 +287,20 @@ const Revenue = () => {
                         -${role === 'lsp' ? '500.00' : '250.00'}
                       </TableCell>
                       <TableCell>Completed</TableCell>
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            toast({
+                              title: "Transaction Details",
+                              description: "Transaction #TX-OUT-452 details will be available soon.",
+                            });
+                          }}
+                        >
+                          View
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -217,13 +310,28 @@ const Revenue = () => {
         </TabsContent>
         <TabsContent value="invoices">
           <Card>
-            <CardHeader>
-              <CardTitle>Invoices</CardTitle>
-              <CardDescription>
-                {role === 'admin' 
-                  ? 'Platform invoices' 
-                  : 'Your invoices for completed jobs'}
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Invoices</CardTitle>
+                <CardDescription>
+                  {role === 'admin' 
+                    ? 'Platform invoices' 
+                    : 'Your invoices for completed jobs'}
+                </CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  toast({
+                    title: "Generate Invoice",
+                    description: "This feature will be available soon.",
+                  });
+                }}
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                Generate Invoice
+              </Button>
             </CardHeader>
             <CardContent>
               <Table>
@@ -237,7 +345,7 @@ const Revenue = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
+                  <TableRow className="hover-scale">
                     <TableCell>#INV-2023-123</TableCell>
                     <TableCell>May 31, 2023</TableCell>
                     <TableCell>
@@ -249,7 +357,16 @@ const Revenue = () => {
                       ${role === 'admin' ? '1,245.00' : role === 'lsp' ? '875.00' : '450.00'}
                     </TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          toast({
+                            title: "Invoice Downloaded",
+                            description: "Invoice #INV-2023-123 has been downloaded.",
+                          });
+                        }}
+                      >
                         <Download className="mr-2 h-4 w-4" />
                         Download
                       </Button>
@@ -262,13 +379,30 @@ const Revenue = () => {
         </TabsContent>
         <TabsContent value="payouts">
           <Card>
-            <CardHeader>
-              <CardTitle>Payouts</CardTitle>
-              <CardDescription>
-                {role === 'admin' 
-                  ? 'Recent payouts to interpreters and LSPs' 
-                  : 'Your payout history'}
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Payouts</CardTitle>
+                <CardDescription>
+                  {role === 'admin' 
+                    ? 'Recent payouts to interpreters and LSPs' 
+                    : 'Your payout history'}
+                </CardDescription>
+              </div>
+              {role === 'admin' && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    toast({
+                      title: "Schedule Payout",
+                      description: "This feature will be available soon.",
+                    });
+                  }}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Schedule Payout
+                </Button>
+              )}
             </CardHeader>
             <CardContent>
               <Table>
@@ -279,10 +413,11 @@ const Revenue = () => {
                     <TableHead>Amount</TableHead>
                     <TableHead>Method</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
+                  <TableRow className="hover-scale">
                     <TableCell>#PO-4582</TableCell>
                     <TableCell>May 20, 2023</TableCell>
                     <TableCell>
@@ -290,6 +425,20 @@ const Revenue = () => {
                     </TableCell>
                     <TableCell>Bank Transfer</TableCell>
                     <TableCell>Completed</TableCell>
+                    <TableCell>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          toast({
+                            title: "Payout Details",
+                            description: "Payout #PO-4582 details will be available soon.",
+                          });
+                        }}
+                      >
+                        View
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -299,11 +448,26 @@ const Revenue = () => {
         {role === 'admin' && (
           <TabsContent value="reports">
             <Card>
-              <CardHeader>
-                <CardTitle>Financial Reports</CardTitle>
-                <CardDescription>
-                  Platform financial reports and analytics
-                </CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Financial Reports</CardTitle>
+                  <CardDescription>
+                    Platform financial reports and analytics
+                  </CardDescription>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    toast({
+                      title: "Generate Report",
+                      description: "This feature will be available soon.",
+                    });
+                  }}
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Generate Report
+                </Button>
               </CardHeader>
               <CardContent>
                 <p>This section would contain detailed financial reports and analytics.</p>
@@ -312,6 +476,29 @@ const Revenue = () => {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Dialogs for actions */}
+      <RevenueActionDialog
+        actionType="export"
+        isOpen={isExportDialogOpen}
+        onOpenChange={setIsExportDialogOpen}
+      />
+      
+      <RevenueActionDialog
+        actionType="adjustFees"
+        isOpen={isFeesDialogOpen}
+        onOpenChange={setIsFeesDialogOpen}
+      />
+      
+      <RevenueActionDialog
+        actionType="withdraw"
+        isOpen={isWithdrawDialogOpen}
+        onOpenChange={setIsWithdrawDialogOpen}
+        prefilledData={{
+          amount: "",
+          accountType: "bank",
+        }}
+      />
     </div>
   );
 };

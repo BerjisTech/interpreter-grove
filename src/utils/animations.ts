@@ -61,3 +61,25 @@ export const animateElement = (
     element.classList.remove(animationClass);
   }, duration);
 };
+
+// CSS Classes for common animations
+// Note: These should be complemented by appropriate Tailwind classes
+export const animationClasses = {
+  // Hover animations
+  hoverScale: 'transition-transform duration-200 hover:scale-105',
+  hoverShadow: 'transition-shadow duration-200 hover:shadow-md',
+  hoverBounce: 'transition-transform duration-300 hover:-translate-y-1 hover:shadow-md',
+  
+  // Fade animations
+  fadeIn: 'animate-fade-in',
+  fadeOut: 'animate-fade-out',
+  
+  // Scale animations
+  scaleIn: 'animate-scale-in',
+  scaleOut: 'animate-scale-out',
+  
+  // Combined animations
+  popIn: 'animate-[fade-in_0.3s_ease-out,scale-in_0.2s_ease-out]',
+  slideUp: 'animate-[fade-in_0.3s_ease-out,slide-up_0.2s_ease-out]',
+  slideRight: 'animate-[fade-in_0.3s_ease-out,slide-right_0.2s_ease-out]',
+};
