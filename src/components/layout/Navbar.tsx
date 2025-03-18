@@ -1,12 +1,13 @@
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Globe, Phone, MessageSquare, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   // Handle navbar background change on scroll
   useEffect(() => {
@@ -17,6 +18,11 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Check if the link is active
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
 
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -34,25 +40,33 @@ const Navbar = () => {
           <nav className="hidden md:flex items-center space-x-8">
             <Link 
               to="/" 
-              className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors"
+              className={`text-sm font-medium transition-colors ${
+                isActive('/') ? 'text-foreground' : 'text-foreground/80 hover:text-foreground'
+              }`}
             >
               Home
             </Link>
             <Link 
               to="/interpreters" 
-              className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors"
+              className={`text-sm font-medium transition-colors ${
+                isActive('/interpreters') ? 'text-foreground' : 'text-foreground/80 hover:text-foreground'
+              }`}
             >
               Interpreters
             </Link>
             <Link 
               to="/how-it-works" 
-              className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors"
+              className={`text-sm font-medium transition-colors ${
+                isActive('/how-it-works') ? 'text-foreground' : 'text-foreground/80 hover:text-foreground'
+              }`}
             >
               How It Works
             </Link>
             <Link 
               to="/pricing" 
-              className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors"
+              className={`text-sm font-medium transition-colors ${
+                isActive('/pricing') ? 'text-foreground' : 'text-foreground/80 hover:text-foreground'
+              }`}
             >
               Pricing
             </Link>
@@ -91,28 +105,36 @@ const Navbar = () => {
           <div className="px-4 py-3 space-y-1 bg-white/95 backdrop-blur-md shadow-medium">
             <Link
               to="/"
-              className="block py-2 px-3 text-base font-medium rounded-md hover:bg-accent transition-colors"
+              className={`block py-2 px-3 text-base font-medium rounded-md hover:bg-accent transition-colors ${
+                isActive('/') ? 'bg-accent/50' : ''
+              }`}
               onClick={() => setMobileMenuOpen(false)}
             >
               Home
             </Link>
             <Link
               to="/interpreters"
-              className="block py-2 px-3 text-base font-medium rounded-md hover:bg-accent transition-colors"
+              className={`block py-2 px-3 text-base font-medium rounded-md hover:bg-accent transition-colors ${
+                isActive('/interpreters') ? 'bg-accent/50' : ''
+              }`}
               onClick={() => setMobileMenuOpen(false)}
             >
               Interpreters
             </Link>
             <Link
               to="/how-it-works"
-              className="block py-2 px-3 text-base font-medium rounded-md hover:bg-accent transition-colors"
+              className={`block py-2 px-3 text-base font-medium rounded-md hover:bg-accent transition-colors ${
+                isActive('/how-it-works') ? 'bg-accent/50' : ''
+              }`}
               onClick={() => setMobileMenuOpen(false)}
             >
               How It Works
             </Link>
             <Link
               to="/pricing"
-              className="block py-2 px-3 text-base font-medium rounded-md hover:bg-accent transition-colors"
+              className={`block py-2 px-3 text-base font-medium rounded-md hover:bg-accent transition-colors ${
+                isActive('/pricing') ? 'bg-accent/50' : ''
+              }`}
               onClick={() => setMobileMenuOpen(false)}
             >
               Pricing
