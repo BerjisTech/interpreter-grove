@@ -1,7 +1,7 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { database } from '@/lib/firebase';
-import { ref, onValue, set, push, child, get, remove } from 'firebase/database';
+import { ref, onValue, set, push, child, get, remove, onDisconnect, off } from 'firebase/database';
 import { toast } from 'sonner';
 
 interface Message {
@@ -17,6 +17,16 @@ interface Participant {
   role: string;
   isYou?: boolean;
   isInterpreter?: boolean;
+}
+
+// Interface for WebRTC signaling data
+interface SignalingData {
+  type: 'offer' | 'answer' | 'ice-candidate';
+  sender: string;
+  receiver?: string;
+  sdp?: RTCSessionDescriptionInit;
+  candidate?: RTCIceCandidateInit;
+  timestamp: number;
 }
 
 interface CallContextType {
@@ -35,6 +45,8 @@ interface CallContextType {
   isVideoOn: boolean;
   toggleMic: () => void;
   toggleVideo: () => void;
+  isConnecting: boolean;
+  connectionEstablished: boolean;
 }
 
 const CallContext = createContext<CallContextType | undefined>(undefined);
@@ -49,6 +61,24 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const [isMicOn, setIsMicOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [currentUser, setCurrentUser] = useState<Participant | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionEstablished, setConnectionEstablished] = useState(false);
+  
+  // WebRTC peer connection
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const remoteStreamRef = useRef<MediaStream | null>(null);
+  const signalingSenderRef = useRef<string | null>(null);
+  const signalingSendingCompleteRef = useRef<boolean>(false);
+
+  // RTCPeerConnection configuration (includes free STUN servers)
+  const rtcConfig = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+    ]
+  };
 
   // Initialize media streams when joining a call
   useEffect(() => {
@@ -68,6 +98,15 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           }));
           setParticipants(participantList);
           console.log("Updated participants:", participantList);
+          
+          // If we have two participants, initiate WebRTC if not already started
+          if (participantList.length === 2 && !connectionEstablished && !isConnecting) {
+            const otherParticipant = participantList.find(p => !p.isYou);
+            if (otherParticipant && currentUser) {
+              // Initialize WebRTC connection
+              setupWebRTCConnection(currentUser.id, otherParticipant.id);
+            }
+          }
         } else {
           setParticipants([]);
         }
@@ -92,10 +131,238 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       return () => {
         unsubParticipants();
         unsubMessages();
+        
+        // Clean up WebRTC connection
+        cleanupWebRTCConnection();
       };
     }
   }, [roomId, isCallActive, currentUser]);
   
+  // Setup WebRTC signaling listeners
+  useEffect(() => {
+    if (roomId && currentUser) {
+      console.log("Setting up signaling channel for roomId:", roomId);
+      const signalingRef = ref(database, `calls/${roomId}/signaling`);
+      
+      // Listen for signaling messages
+      onValue(signalingRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+        
+        Object.entries(data).forEach(([key, value]) => {
+          const signal = value as SignalingData;
+          
+          // Only process signals where we are the receiver or that are ICE candidates
+          // for our existing peer connection after we've sent our offer/answer
+          if ((signal.receiver === currentUser.id || 
+              (signal.type === 'ice-candidate' && signalingSendingCompleteRef.current)) && 
+              signal.sender !== currentUser.id) {
+            
+            console.log("Received signal:", signal.type, "from:", signal.sender);
+            handleSignalingMessage(signal, key);
+          }
+        });
+      });
+      
+      return () => {
+        off(signalingRef);
+      };
+    }
+  }, [roomId, currentUser]);
+  
+  // Function to handle incoming signaling messages
+  const handleSignalingMessage = async (signal: SignalingData, signalKey: string) => {
+    try {
+      if (!peerConnectionRef.current) {
+        console.log("Can't handle signal, no peer connection exists");
+        return;
+      }
+      
+      switch (signal.type) {
+        case 'offer':
+          if (!peerConnectionRef.current) return;
+          console.log("Setting remote description from offer");
+          
+          await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signal.sdp!));
+          const answer = await peerConnectionRef.current.createAnswer();
+          await peerConnectionRef.current.setLocalDescription(answer);
+          
+          // Send the answer back
+          await sendSignalingMessage({
+            type: 'answer',
+            sender: currentUser!.id,
+            receiver: signal.sender,
+            sdp: answer,
+            timestamp: Date.now()
+          });
+          
+          signalingSendingCompleteRef.current = true;
+          break;
+          
+        case 'answer':
+          if (!peerConnectionRef.current) return;
+          console.log("Setting remote description from answer");
+          
+          await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(signal.sdp!));
+          signalingSendingCompleteRef.current = true;
+          break;
+          
+        case 'ice-candidate':
+          if (!peerConnectionRef.current || !signal.candidate) return;
+          console.log("Adding ICE candidate");
+          
+          try {
+            await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(signal.candidate));
+          } catch (e) {
+            console.error("Error adding ICE candidate:", e);
+          }
+          break;
+      }
+      
+      // Clean up the processed signal
+      const signalRef = ref(database, `calls/${roomId}/signaling/${signalKey}`);
+      remove(signalRef);
+    } catch (error) {
+      console.error("Error handling signaling message:", error);
+    }
+  };
+  
+  // Function to send signaling messages
+  const sendSignalingMessage = async (signal: SignalingData) => {
+    if (!roomId) return;
+    
+    try {
+      const signalingRef = ref(database, `calls/${roomId}/signaling`);
+      const newSignalRef = push(signalingRef);
+      await set(newSignalRef, signal);
+      
+      console.log("Sent signaling message:", signal.type, "to:", signal.receiver);
+    } catch (error) {
+      console.error("Error sending signaling message:", error);
+    }
+  };
+
+  // Function to setup WebRTC peer connection
+  const setupWebRTCConnection = async (localParticipantId: string, remoteParticipantId: string) => {
+    try {
+      // Don't setup if already connecting or connected
+      if (isConnecting || connectionEstablished) {
+        console.log("Already connecting or connected, skipping setup");
+        return;
+      }
+      
+      setIsConnecting(true);
+      console.log("Setting up WebRTC connection between", localParticipantId, "and", remoteParticipantId);
+      
+      if (peerConnectionRef.current) {
+        cleanupWebRTCConnection();
+      }
+      
+      // Wait for local stream to be ready
+      if (!localStreamRef.current) {
+        console.log("Waiting for local stream...");
+        await initializeLocalStream();
+      }
+      
+      // Create a new RTCPeerConnection
+      peerConnectionRef.current = new RTCPeerConnection(rtcConfig);
+      
+      // Set up event handlers
+      peerConnectionRef.current.onicecandidate = (event) => {
+        if (event.candidate) {
+          console.log("Sending ICE candidate");
+          sendSignalingMessage({
+            type: 'ice-candidate',
+            sender: localParticipantId,
+            receiver: remoteParticipantId,
+            candidate: event.candidate.toJSON(),
+            timestamp: Date.now()
+          });
+        }
+      };
+      
+      peerConnectionRef.current.ontrack = (event) => {
+        console.log("Received remote track", event.track.kind);
+        if (!remoteStreamRef.current) {
+          remoteStreamRef.current = new MediaStream();
+          setRemoteStream(remoteStreamRef.current);
+        }
+        remoteStreamRef.current.addTrack(event.track);
+      };
+      
+      peerConnectionRef.current.onconnectionstatechange = () => {
+        console.log("Connection state changed:", peerConnectionRef.current?.connectionState);
+        if (peerConnectionRef.current?.connectionState === 'connected') {
+          console.log("WebRTC connection established!");
+          setConnectionEstablished(true);
+          setIsConnecting(false);
+          toast.success("Call connected");
+        } else if (['failed', 'closed', 'disconnected'].includes(peerConnectionRef.current?.connectionState || '')) {
+          console.log("WebRTC connection failed or closed");
+          setConnectionEstablished(false);
+          setIsConnecting(false);
+        }
+      };
+      
+      // Add local tracks to the connection
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => {
+          if (localStreamRef.current && peerConnectionRef.current) {
+            console.log("Adding local track to peer connection:", track.kind);
+            peerConnectionRef.current.addTrack(track, localStreamRef.current);
+          }
+        });
+      }
+      
+      // Create and send offer (if we are the one initiating)
+      const isInitiator = localParticipantId < remoteParticipantId; // Simple rule to decide who initiates
+      
+      if (isInitiator) {
+        console.log("Creating and sending offer as initiator");
+        const offer = await peerConnectionRef.current.createOffer();
+        await peerConnectionRef.current.setLocalDescription(offer);
+        
+        await sendSignalingMessage({
+          type: 'offer',
+          sender: localParticipantId,
+          receiver: remoteParticipantId,
+          sdp: offer,
+          timestamp: Date.now()
+        });
+        
+        signalingSenderRef.current = localParticipantId;
+      } else {
+        console.log("Waiting for offer as receiver");
+        signalingSenderRef.current = remoteParticipantId;
+      }
+    } catch (error) {
+      console.error("Error setting up WebRTC connection:", error);
+      setIsConnecting(false);
+      toast.error("Failed to establish call connection");
+    }
+  };
+
+  // Cleanup WebRTC connection
+  const cleanupWebRTCConnection = () => {
+    if (peerConnectionRef.current) {
+      console.log("Cleaning up WebRTC connection");
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    
+    setConnectionEstablished(false);
+    setIsConnecting(false);
+    
+    if (remoteStreamRef.current) {
+      remoteStreamRef.current.getTracks().forEach(track => track.stop());
+      remoteStreamRef.current = null;
+      setRemoteStream(null);
+    }
+    
+    signalingSenderRef.current = null;
+    signalingSendingCompleteRef.current = false;
+  };
+
   // Effect to handle mic and video toggles
   useEffect(() => {
     if (localStream) {
@@ -115,6 +382,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
       }
+      cleanupWebRTCConnection();
     };
   }, []);
 
@@ -123,9 +391,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       console.log("Initializing local media stream");
       
       // First check if we already have a stream
-      if (localStream) {
+      if (localStreamRef.current) {
         console.log("Local stream already exists");
-        return;
+        return localStreamRef.current;
       }
       
       // Request user media with appropriate constraints
@@ -135,20 +403,13 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       });
       
       console.log("Media stream obtained:", stream);
+      localStreamRef.current = stream;
       setLocalStream(stream);
-      
-      // Create a mock remote stream for demo purposes
-      // In a real app, this would be replaced with WebRTC peer connection
-      setTimeout(() => {
-        console.log("Setting mock remote stream");
-        // For demo purposes, we'll use a clone of the local stream as the remote stream
-        const mockRemoteStream = stream.clone();
-        setRemoteStream(mockRemoteStream);
-      }, 2000);
-      
+      return stream;
     } catch (error) {
       console.error('Error accessing media devices:', error);
       toast.error('Failed to access camera or microphone. Please check your permissions.');
+      return null;
     }
   };
 
@@ -174,6 +435,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         status: 'waiting',
         type: creator.role === 'interpreter' ? 'interpreter' : 'client'
       });
+      
+      // Set cleanup on disconnect
+      onDisconnect(newParticipantRef).remove();
       
       setRoomId(callId);
       setIsCallActive(true);
@@ -213,6 +477,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       // Update call status
       await set(ref(database, `calls/${callId}/metadata/status`), 'active');
       
+      // Set cleanup on disconnect
+      onDisconnect(newParticipantRef).remove();
+      
       setRoomId(callId);
       setIsCallActive(true);
       setCurrentUser({ ...participant, id: participantId });
@@ -236,6 +503,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Leaving call:", roomId);
       
+      // Clean up WebRTC connection first
+      cleanupWebRTCConnection();
+      
       // Remove participant from the call
       await remove(ref(database, `calls/${roomId}/participants/${currentUser.id}`));
       
@@ -250,14 +520,10 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Clean up local state
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current = null;
         setLocalStream(null);
-      }
-      
-      if (remoteStream) {
-        remoteStream.getTracks().forEach(track => track.stop());
-        setRemoteStream(null);
       }
       
       setRoomId(null);
@@ -318,7 +584,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     isMicOn,
     isVideoOn,
     toggleMic,
-    toggleVideo
+    toggleVideo,
+    isConnecting,
+    connectionEstablished
   };
 
   return <CallContext.Provider value={value}>{children}</CallContext.Provider>;
@@ -331,3 +599,4 @@ export const useCall = () => {
   }
   return context;
 };
+

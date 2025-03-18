@@ -5,7 +5,7 @@ import {
   PhoneOffIcon, MessageSquare, Users, SettingsIcon,
   MonitorIcon, Volume2Icon, Volume1Icon, VolumeXIcon, Video,
   User, UserCheck, BellIcon, PanelLeftIcon, PenLine, Copy, CheckCircle,
-  Send, Paperclip
+  Send, Paperclip, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -47,7 +47,9 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
     localStream,
     remoteStream,
     roomId,
-    leaveCall
+    leaveCall,
+    isConnecting,
+    connectionEstablished
   } = useCall();
   
   const [volume, setVolume] = useState([50]);
@@ -59,7 +61,6 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [messageText, setMessageText] = useState('');
-  const [isConnected, setIsConnected] = useState(false);
   
   // Refs for video elements
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -76,11 +77,13 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
     if (localStream && localVideoRef.current) {
       localVideoRef.current.srcObject = localStream;
     }
-    
+  }, [localStream]);
+  
+  useEffect(() => {
     if (remoteStream && remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = remoteStream;
     }
-  }, [localStream, remoteStream]);
+  }, [remoteStream]);
   
   // Generate invite link
   useEffect(() => {
@@ -90,23 +93,11 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
     }
   }, [roomId]);
   
-  // Simulate connection with participants
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsConnected(participants.length > 1);
-      if (participants.length > 1) {
-        toast.success(`${participants.find(p => !p.isYou)?.name || 'Participant'} connected to your call`);
-      }
-    }, 2000);
-    
-    return () => clearTimeout(timer);
-  }, [participants]);
-  
   // Call timer
   useEffect(() => {
     let interval: number | null = null;
     
-    if (isConnected) {
+    if (connectionEstablished) {
       interval = window.setInterval(() => {
         setCallDuration((prev) => prev + 1);
       }, 1000);
@@ -115,7 +106,7 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isConnected]);
+  }, [connectionEstablished]);
   
   // Scroll chat to bottom when new messages arrive
   useEffect(() => {
@@ -197,14 +188,27 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
     }
   };
 
+  // Determine connection status
+  const getConnectionStatus = () => {
+    if (isConnecting) return { status: 'connecting', text: 'Establishing connection...' };
+    if (connectionEstablished) return { status: 'connected', text: `Connected • ${formatDuration(callDuration)}` };
+    if (participants.length >= 2) return { status: 'waiting', text: 'Waiting for media connection...' };
+    return { status: 'waiting', text: 'Waiting for other participant...' };
+  };
+
+  const connectionStatus = getConnectionStatus();
+
   return (
     <div className="relative h-full flex flex-col">
       {/* Call Status Bar */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
         <div className="bg-black/70 backdrop-blur-sm rounded-full px-3 py-1 flex items-center space-x-2">
-          <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-amber-500'}`} />
+          <div className={`h-2 w-2 rounded-full ${
+            connectionStatus.status === 'connected' ? 'bg-green-500 animate-pulse' : 
+            connectionStatus.status === 'connecting' ? 'bg-amber-500 animate-pulse' : 'bg-amber-500'
+          }`} />
           <span className="text-xs text-white font-medium">
-            {isConnected ? `Connected • ${formatDuration(callDuration)}` : 'Connecting...'}
+            {connectionStatus.text}
           </span>
         </div>
       </div>
@@ -213,31 +217,52 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
       <div className="flex-1 bg-zinc-900 rounded-lg overflow-hidden relative">
         {/* Remote video (interpreter) */}
         <div className="absolute inset-0 flex items-center justify-center">
-          {isConnected ? (
-            remoteStream ? (
-              <video
-                ref={remoteVideoRef}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <img 
-                src={interpreter?.image || "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"} 
-                alt={interpreter?.name || "Interpreter"} 
-                className="w-full h-full object-cover"
-              />
-            )
+          {connectionEstablished ? (
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              className="w-full h-full object-cover"
+            />
           ) : (
-            <div className="text-white/80">
-              <div className="w-16 h-16 border-4 border-t-transparent border-white/30 rounded-full animate-spin mb-4 mx-auto" />
-              <p>Connecting to call...</p>
-            </div>
+            <>
+              {participants.length > 1 ? (
+                <div className="w-full h-full">
+                  <img 
+                    src={interpreter?.image || "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=2787&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"} 
+                    alt={interpreter?.name || "Interpreter"} 
+                    className="w-full h-full object-cover opacity-70"
+                  />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
+                    {isConnecting ? (
+                      <>
+                        <Loader2 className="h-10 w-10 text-white animate-spin mb-4" />
+                        <p className="text-white text-lg font-medium">Establishing connection...</p>
+                        <p className="text-white/80 text-sm mt-2">This may take a moment</p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-4">
+                          <Video className="h-8 w-8 text-primary" />
+                        </div>
+                        <p className="text-white text-lg font-medium">Waiting for media connection</p>
+                        <p className="text-white/80 text-sm mt-2">The other participant has joined</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-white/80 flex flex-col items-center">
+                  <div className="w-16 h-16 border-4 border-t-transparent border-white/30 rounded-full animate-spin mb-4" />
+                  <p>Waiting for the other participant to join...</p>
+                </div>
+              )}
+            </>
           )}
         </div>
         
         {/* Interpreter/Remote user info */}
-        {isConnected && (
+        {(connectionEstablished || participants.length > 1) && (
           <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 text-white text-sm">
             <div className="font-medium">
               {participants.find(p => !p.isYou)?.name || interpreter?.name || "Remote User"}
@@ -250,7 +275,7 @@ const CallInterface = ({ onEndCall, interpreter, callType = 'video' }: CallInter
         
         {/* Self video (user) */}
         <div className="absolute bottom-4 right-4 w-40 h-32 bg-zinc-800 rounded-lg overflow-hidden border border-white/20 shadow-lg">
-          {isVideoOn && callType === 'video' ? (
+          {isVideoOn && callType === 'video' && localStream ? (
             <video
               ref={localVideoRef}
               autoPlay
