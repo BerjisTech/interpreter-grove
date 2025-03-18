@@ -14,6 +14,8 @@ import Support from '@/components/dashboard/Support';
 import LSPInterpreterManagement from '@/components/dashboard/LSPInterpreterManagement';
 import ClientManagement from '@/components/dashboard/ClientManagement';
 import WorkingWithManagement from '@/components/dashboard/WorkingWithManagement';
+import CourseManagement from '@/components/dashboard/CourseManagement';
+import ConsultancyManagement from '@/components/dashboard/ConsultancyManagement';
 
 const Dashboard = () => {
   return (
@@ -34,6 +36,8 @@ const Dashboard = () => {
           <Route path="/interpreters/*" element={<LSPInterpreterManagement />} />
           <Route path="/clients/*" element={<ClientManagement />} />
           <Route path="/working-with/*" element={<WorkingWithManagement />} />
+          <Route path="/courses/*" element={<CourseManagement />} />
+          <Route path="/consultancy/*" element={<ConsultancyManagement />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </DashboardLayout>

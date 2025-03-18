@@ -1,4 +1,3 @@
-
 import { useUserRole } from '@/contexts/UserRoleContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,7 +13,9 @@ import {
   User,
   Award,
   Languages,
-  Building2
+  Building2,
+  BookOpen,
+  Globe
 } from 'lucide-react';
 
 interface StatCardProps {
@@ -143,6 +144,33 @@ const DashboardHome = () => {
         )}
       </div>
 
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard 
+          title="Language Courses" 
+          value={role === 'freelancer' ? "3" : "2"} 
+          description={role === 'freelancer' ? "Courses you teach" : "Courses enrolled"} 
+          icon={<BookOpen className="h-4 w-4 text-muted-foreground" />} 
+        />
+        <StatCard 
+          title="Course Progress" 
+          value={role === 'freelancer' ? "24" : "65%"} 
+          description={role === 'freelancer' ? "Active students" : "Average completion"} 
+          icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />} 
+        />
+        <StatCard 
+          title="Cultural Resources" 
+          value={role === 'freelancer' ? "5" : "8"} 
+          description={role === 'freelancer' ? "Resources created" : "Resources viewed"} 
+          icon={<Globe className="h-4 w-4 text-muted-foreground" />} 
+        />
+        <StatCard 
+          title="Consultations" 
+          value={role === 'freelancer' ? "12" : "3"} 
+          description={role === 'freelancer' ? "This month" : "Scheduled"} 
+          icon={<Users className="h-4 w-4 text-muted-foreground" />} 
+        />
+      </div>
+
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -184,6 +212,22 @@ const DashboardHome = () => {
                         </div>
                         <div className="ml-auto font-medium">5h ago</div>
                       </div>
+                      <div className="flex items-center">
+                        <BookOpen className="mr-2 h-5 w-5 text-green-500" />
+                        <div className="ml-4 space-y-1">
+                          <p className="text-sm font-medium">New language course published</p>
+                          <p className="text-sm text-muted-foreground">Advanced Japanese for Business</p>
+                        </div>
+                        <div className="ml-auto font-medium">Yesterday</div>
+                      </div>
+                      <div className="flex items-center">
+                        <Globe className="mr-2 h-5 w-5 text-blue-500" />
+                        <div className="ml-4 space-y-1">
+                          <p className="text-sm font-medium">New cultural consultant approved</p>
+                          <p className="text-sm text-muted-foreground">Expert in Middle Eastern business customs</p>
+                        </div>
+                        <div className="ml-auto font-medium">2 days ago</div>
+                      </div>
                     </>
                   )}
                   
@@ -213,6 +257,26 @@ const DashboardHome = () => {
                         </div>
                         <div className="ml-auto font-medium">Yesterday</div>
                       </div>
+                      {role === 'freelancer' && (
+                        <>
+                          <div className="flex items-center">
+                            <BookOpen className="mr-2 h-5 w-5 text-blue-500" />
+                            <div className="ml-4 space-y-1">
+                              <p className="text-sm font-medium">New course enrollment</p>
+                              <p className="text-sm text-muted-foreground">3 new students joined your Spanish course</p>
+                            </div>
+                            <div className="ml-auto font-medium">Yesterday</div>
+                          </div>
+                          <div className="flex items-center">
+                            <Globe className="mr-2 h-5 w-5 text-purple-500" />
+                            <div className="ml-4 space-y-1">
+                              <p className="text-sm font-medium">New consultation request</p>
+                              <p className="text-sm text-muted-foreground">Business etiquette in Japan for a CEO</p>
+                            </div>
+                            <div className="ml-auto font-medium">2 days ago</div>
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
                   
@@ -241,6 +305,22 @@ const DashboardHome = () => {
                           <p className="text-sm text-muted-foreground">$85 for job #6721</p>
                         </div>
                         <div className="ml-auto font-medium">Yesterday</div>
+                      </div>
+                      <div className="flex items-center">
+                        <BookOpen className="mr-2 h-5 w-5 text-green-500" />
+                        <div className="ml-4 space-y-1">
+                          <p className="text-sm font-medium">Course milestone achieved</p>
+                          <p className="text-sm text-muted-foreground">Completed 50% of Spanish Business course</p>
+                        </div>
+                        <div className="ml-auto font-medium">2 days ago</div>
+                      </div>
+                      <div className="flex items-center">
+                        <Globe className="mr-2 h-5 w-5 text-blue-500" />
+                        <div className="ml-4 space-y-1">
+                          <p className="text-sm font-medium">Cultural consultation scheduled</p>
+                          <p className="text-sm text-muted-foreground">Japanese business etiquette on Friday</p>
+                        </div>
+                        <div className="ml-auto font-medium">3 days ago</div>
                       </div>
                     </>
                   )}
@@ -278,6 +358,22 @@ const DashboardHome = () => {
                       </div>
                       <div className="font-medium text-green-500">89%</div>
                     </div>
+                    <div className="flex items-center space-x-4">
+                      <BookOpen className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none">Course Enrollments</p>
+                        <p className="text-sm text-muted-foreground">252 new enrollments this month</p>
+                      </div>
+                      <div className="font-medium text-green-500">+15%</div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <Globe className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none">Cultural Consultants</p>
+                        <p className="text-sm text-muted-foreground">28 active consultants</p>
+                      </div>
+                      <div className="font-medium text-blue-500">28</div>
+                    </div>
                   </div>
                 )}
                 
@@ -307,6 +403,26 @@ const DashboardHome = () => {
                       </div>
                       <div className="font-medium text-green-500">✓</div>
                     </div>
+                    {role === 'freelancer' && (
+                      <>
+                        <div className="flex items-center space-x-4">
+                          <BookOpen className="h-5 w-5 text-muted-foreground" />
+                          <div className="flex-1 space-y-1">
+                            <p className="text-sm font-medium leading-none">Course Rating</p>
+                            <p className="text-sm text-muted-foreground">Average rating across all courses</p>
+                          </div>
+                          <div className="font-medium text-green-500">4.8/5</div>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                          <Globe className="h-5 w-5 text-muted-foreground" />
+                          <div className="flex-1 space-y-1">
+                            <p className="text-sm font-medium leading-none">Consultation Rate</p>
+                            <p className="text-sm text-muted-foreground">Average hourly rate</p>
+                          </div>
+                          <div className="font-medium text-blue-500">$75/hr</div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
                 
@@ -335,6 +451,22 @@ const DashboardHome = () => {
                         <p className="text-sm text-muted-foreground">Premium membership active</p>
                       </div>
                       <div className="font-medium text-primary">Premium</div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <BookOpen className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none">Courses Completed</p>
+                        <p className="text-sm text-muted-foreground">Total language courses completed</p>
+                      </div>
+                      <div className="font-medium text-green-500">3</div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <Globe className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none">Cultural Sessions</p>
+                        <p className="text-sm text-muted-foreground">Consultations this year</p>
+                      </div>
+                      <div className="font-medium text-blue-500">5</div>
                     </div>
                   </div>
                 )}

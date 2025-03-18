@@ -29,7 +29,9 @@ import {
   BadgeCheck,
   LucideIcon,
   List,
-  Link as LinkIcon
+  Link as LinkIcon,
+  BookOpen,
+  Globe
 } from 'lucide-react';
 import RoleSelector from './RoleSelector';
 
@@ -121,6 +123,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       icon: LinkIcon, 
       href: '/dashboard/working-with', 
       roles: ['client'] 
+    },
+    // New language and cultural learning items
+    { 
+      title: 'Language Courses', 
+      icon: BookOpen, 
+      href: '/dashboard/courses', 
+      roles: ['admin', 'lsp', 'freelancer', 'client'] 
+    },
+    { 
+      title: 'Cultural Consultancy', 
+      icon: Globe, 
+      href: '/dashboard/consultancy', 
+      roles: ['admin', 'lsp', 'freelancer', 'client'] 
     },
   ];
 
