@@ -1,10 +1,9 @@
-
 import React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { format } from "date-fns";
-import { CalendarIcon, CheckIcon } from "lucide-react";
+import { CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -31,9 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useUserRole } from "@/contexts/UserRoleContext";
 
-// Different form schemas based on action type
+// Form schemas
 const withdrawFormSchema = z.object({
   amount: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
     message: "Amount must be a positive number",
@@ -66,68 +64,92 @@ const exportFormSchema = z.object({
   includeDetails: z.boolean().default(true),
 });
 
+type WithdrawFormData = z.infer<typeof withdrawFormSchema>;
+type AdjustFeesFormData = z.infer<typeof adjustFeesFormSchema>;
+type ExportFormData = z.infer<typeof exportFormSchema>;
+
 type ActionType = "withdraw" | "adjustFees" | "export";
 
 interface RevenueActionFormProps {
   actionType: ActionType;
   onCancel: () => void;
-  prefilledData?: Record<string, any>;
+  prefilledData?: Partial<WithdrawFormData | AdjustFeesFormData | ExportFormData>;
 }
 
-export function RevenueActionForm({ 
-  actionType, 
-  onCancel, 
-  prefilledData = {} 
+export function RevenueActionForm({
+  actionType,
+  onCancel,
+  prefilledData = {},
 }: RevenueActionFormProps) {
   const { toast } = useToast();
-  const { role } = useUserRole();
-  
-  // Select the appropriate schema based on action type
-  const formSchema = 
-    actionType === "withdraw" 
-      ? withdrawFormSchema 
-      : actionType === "adjustFees" 
-        ? adjustFeesFormSchema 
-        : exportFormSchema;
-  
-  // Set up form with prefilled data if available
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      ...prefilledData,
-      // Default values for dates if not provided
-      ...(actionType === "export" && {
-        startDate: prefilledData.startDate || new Date(new Date().setDate(new Date().getDate() - 30)),
-        endDate: prefilledData.endDate || new Date(),
-        format: prefilledData.format || "csv",
-        includeDetails: prefilledData.includeDetails !== undefined ? prefilledData.includeDetails : true,
-      }),
-      ...(actionType === "withdraw" && {
-        withdrawDate: prefilledData.withdrawDate || new Date(),
-      }),
-      ...(actionType === "adjustFees" && {
-        effectiveDate: prefilledData.effectiveDate || new Date(),
-      }),
-    },
+
+  // Get the appropriate schema and default values based on action type
+  const getFormConfig = () => {
+    switch (actionType) {
+      case "withdraw":
+        return {
+          schema: withdrawFormSchema,
+          defaultValues: {
+            amount: "",
+            accountType: "bank",
+            withdrawDate: new Date(),
+            ...prefilledData as Partial<WithdrawFormData>,
+          } as WithdrawFormData,
+        };
+      case "adjustFees":
+        return {
+          schema: adjustFeesFormSchema,
+          defaultValues: {
+            feeType: "platform",
+            adjustmentType: "percentage",
+            value: "",
+            effectiveDate: new Date(),
+            ...prefilledData as Partial<AdjustFeesFormData>,
+          } as AdjustFeesFormData,
+        };
+      case "export":
+        return {
+          schema: exportFormSchema,
+          defaultValues: {
+            startDate: new Date(new Date().setDate(new Date().getDate() - 30)),
+            endDate: new Date(),
+            format: "csv",
+            includeDetails: true,
+            ...prefilledData as Partial<ExportFormData>,
+          } as ExportFormData,
+        };
+    }
+  };
+
+  const formConfig = getFormConfig();
+  const form = useForm({
+    resolver: zodResolver(formConfig.schema),
+    defaultValues: formConfig.defaultValues,
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Show success message with form values
-    let message;
-    
-    if (actionType === "withdraw") {
-      message = `Withdrawal of $${values.amount} via ${values.accountType} scheduled for ${format(values.withdrawDate, 'PP')}`;
-    } else if (actionType === "adjustFees") {
-      message = `${values.feeType} fees adjusted to ${values.value}${values.adjustmentType === 'percentage' ? '%' : ' USD'} effective ${format(values.effectiveDate, 'PP')}`;
-    } else {
-      message = `Data exported in ${values.format.toUpperCase()} format from ${format(values.startDate, 'PP')} to ${format(values.endDate, 'PP')}`;
+  function onSubmit(values: WithdrawFormData | AdjustFeesFormData | ExportFormData) {
+    let message: string;
+
+    switch (actionType) {
+      case "withdraw":
+        const withdrawValues = values as WithdrawFormData;
+        message = `Withdrawal of $${withdrawValues.amount} via ${withdrawValues.accountType} scheduled for ${format(withdrawValues.withdrawDate, 'PP')}`;
+        break;
+      case "adjustFees":
+        const feeValues = values as AdjustFeesFormData;
+        message = `${feeValues.feeType} fees adjusted to ${feeValues.value}${feeValues.adjustmentType === 'percentage' ? '%' : ' USD'} effective ${format(feeValues.effectiveDate, 'PP')}`;
+        break;
+      case "export":
+        const exportValues = values as ExportFormData;
+        message = `Data exported in ${exportValues.format.toUpperCase()} format from ${format(exportValues.startDate, 'PP')} to ${format(exportValues.endDate, 'PP')}`;
+        break;
     }
-    
+
     toast({
       title: `${actionType === "withdraw" ? "Withdrawal" : actionType === "adjustFees" ? "Fee Adjustment" : "Export"} Successful`,
       description: message,
     });
-    
+
     onCancel();
   }
 
