@@ -1,6 +1,9 @@
-import { Check, X, CreditCard, Shield, Star, Clock, BadgeCheck, Building2 } from "lucide-react";
+
+import { Check, X, CreditCard, Shield, Star, Clock, BadgeCheck, Building2, User, Users, Languages, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useState } from "react";
 
 const PricingTier = ({ title, price, description, features, recommended = false, buttonText = "Get Started" }) => (
   <div className={`bg-card rounded-xl p-8 border ${recommended ? 'border-primary shadow-lg' : 'border-border shadow-sm'} relative`}>
@@ -34,6 +37,8 @@ const PricingTier = ({ title, price, description, features, recommended = false,
 );
 
 const Pricing = () => {
+  const [activeTab, setActiveTab] = useState("clients");
+
   const clientFeatures = [
     {
       title: "Basic",
@@ -78,6 +83,51 @@ const Pricing = () => {
     },
   ];
 
+  const interpreterFeatures = [
+    {
+      title: "Starter",
+      price: "Free",
+      description: "For interpreters just getting started on the platform",
+      features: [
+        { text: "Profile listing", included: true },
+        { text: "Basic job matching", included: true },
+        { text: "Up to 10 hours per month", included: true },
+        { text: "24/7 availability setting", included: true },
+        { text: "Platform commission: 20%", included: true },
+        { text: "Priority matching", included: false },
+      ],
+    },
+    {
+      title: "Professional",
+      price: "$19.99",
+      description: "For active interpreters seeking consistent work",
+      recommended: true,
+      features: [
+        { text: "Premium profile placement", included: true },
+        { text: "Advanced job matching", included: true },
+        { text: "Unlimited hours", included: true },
+        { text: "24/7 availability setting", included: true },
+        { text: "Platform commission: 15%", included: true },
+        { text: "Priority matching", included: true },
+      ],
+      buttonText: "Upgrade Now"
+    },
+    {
+      title: "Agency Partner",
+      price: "$49.99",
+      description: "For interpreters working with language service providers",
+      features: [
+        { text: "Agency connection tools", included: true },
+        { text: "Premium profile placement", included: true },
+        { text: "Unlimited hours", included: true },
+        { text: "24/7 availability setting", included: true },
+        { text: "Platform commission: 10%", included: true },
+        { text: "Priority matching", included: true },
+      ],
+      buttonText: "Become a Partner"
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -88,88 +138,182 @@ const Pricing = () => {
             <p className="text-xl text-muted-foreground mb-8">
               Pay only for the minutes you use with no hidden fees or long-term commitments.
             </p>
-            <div className="inline-flex items-center bg-accent rounded-full p-2">
-              <Button className="rounded-full">For Clients</Button>
-              <Button variant="ghost" className="rounded-full">For Interpreters</Button>
-            </div>
+            <Tabs defaultValue="clients" className="w-full max-w-md mx-auto" onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="clients" className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  For Clients
+                </TabsTrigger>
+                <TabsTrigger value="interpreters" className="flex items-center gap-2">
+                  <Languages className="h-4 w-4" />
+                  For Interpreters
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </div>
       </div>
 
       {/* Pricing Section */}
       <div className="py-20 container mx-auto px-4 md:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {clientFeatures.map((tier, index) => (
-            <PricingTier
-              key={index}
-              title={tier.title}
-              price={tier.price}
-              description={tier.description}
-              features={tier.features}
-              recommended={tier.recommended}
-              buttonText={tier.buttonText}
-            />
-          ))}
-        </div>
+        <Tabs defaultValue="clients" value={activeTab} className="w-full">
+          <TabsContent value="clients" className="mt-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {clientFeatures.map((tier, index) => (
+                <PricingTier
+                  key={index}
+                  title={tier.title}
+                  price={tier.price}
+                  description={tier.description}
+                  features={tier.features}
+                  recommended={tier.recommended}
+                  buttonText={tier.buttonText}
+                />
+              ))}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="interpreters" className="mt-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {interpreterFeatures.map((tier, index) => (
+                <PricingTier
+                  key={index}
+                  title={tier.title}
+                  price={tier.price}
+                  description={tier.description}
+                  features={tier.features}
+                  recommended={tier.recommended}
+                  buttonText={tier.buttonText}
+                />
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Additional Pricing Details */}
         <div className="mt-20 grid grid-cols-1 md:grid-cols-2 gap-10">
-          {/* Interpreter Earnings */}
-          <div className="bg-card rounded-xl p-8 border border-border shadow-sm">
-            <BadgeCheck className="h-12 w-12 text-primary mb-6" />
-            <h2 className="text-2xl font-bold mb-4">Interpreter Earnings</h2>
-            <p className="text-muted-foreground mb-6">
-              Set your own rates based on your experience, credentials, and specialization. 
-              Our platform takes a small commission to maintain quality service.
-            </p>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center pb-2 border-b border-border">
-                <span>Base rate for general interpretation</span>
-                <span className="font-medium">70-80% of client payment</span>
+          {activeTab === "clients" ? (
+            <>
+              {/* Interpreter Earnings */}
+              <div className="bg-card rounded-xl p-8 border border-border shadow-sm">
+                <BadgeCheck className="h-12 w-12 text-primary mb-6" />
+                <h2 className="text-2xl font-bold mb-4">Interpreter Earnings</h2>
+                <p className="text-muted-foreground mb-6">
+                  Set your own rates based on your experience, credentials, and specialization. 
+                  Our platform takes a small commission to maintain quality service.
+                </p>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center pb-2 border-b border-border">
+                    <span>Base rate for general interpretation</span>
+                    <span className="font-medium">70-80% of client payment</span>
+                  </div>
+                  <div className="flex justify-between items-center pb-2 border-b border-border">
+                    <span>Specialized interpretation</span>
+                    <span className="font-medium">75-85% of client payment</span>
+                  </div>
+                  <div className="flex justify-between items-center pb-2 border-b border-border">
+                    <span>Emergency/after-hours services</span>
+                    <span className="font-medium">80-90% of client payment</span>
+                  </div>
+                </div>
+                <Button className="mt-8" variant="outline" asChild>
+                  <Link to="/interpreters">Register as Interpreter</Link>
+                </Button>
               </div>
-              <div className="flex justify-between items-center pb-2 border-b border-border">
-                <span>Specialized interpretation</span>
-                <span className="font-medium">75-85% of client payment</span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-b border-border">
-                <span>Emergency/after-hours services</span>
-                <span className="font-medium">80-90% of client payment</span>
-              </div>
-            </div>
-            <Button className="mt-8" variant="outline">Register as Interpreter</Button>
-          </div>
 
-          {/* LSP Options */}
-          <div className="bg-card rounded-xl p-8 border border-border shadow-sm">
-            <Building2 className="h-12 w-12 text-primary mb-6" />
-            <h2 className="text-2xl font-bold mb-4">Language Service Provider Options</h2>
-            <p className="text-muted-foreground mb-6">
-              Specialized pricing and features for interpretation agencies and language service providers.
-            </p>
-            <div className="space-y-4 mb-6">
-              <div className="flex items-start">
-                <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                <span>Custom dashboard for interpreter management</span>
+              {/* LSP Options */}
+              <div className="bg-card rounded-xl p-8 border border-border shadow-sm">
+                <Building2 className="h-12 w-12 text-primary mb-6" />
+                <h2 className="text-2xl font-bold mb-4">Language Service Provider Options</h2>
+                <p className="text-muted-foreground mb-6">
+                  Specialized pricing and features for interpretation agencies and language service providers.
+                </p>
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>Custom dashboard for interpreter management</span>
+                  </div>
+                  <div className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>Call routing and assignment tools</span>
+                  </div>
+                  <div className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>Detailed analytics and reporting</span>
+                  </div>
+                  <div className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>Volume-based discounted rates</span>
+                  </div>
+                  <div className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>API integration with existing systems</span>
+                  </div>
+                </div>
+                <Button className="mt-2">Contact for LSP Pricing</Button>
               </div>
-              <div className="flex items-start">
-                <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                <span>Call routing and assignment tools</span>
+            </>
+          ) : (
+            <>
+              {/* Certification Benefits */}
+              <div className="bg-card rounded-xl p-8 border border-border shadow-sm">
+                <GraduationCap className="h-12 w-12 text-primary mb-6" />
+                <h2 className="text-2xl font-bold mb-4">Certification Benefits</h2>
+                <p className="text-muted-foreground mb-6">
+                  Upload your certifications to receive special benefits and higher earning potential.
+                </p>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center pb-2 border-b border-border">
+                    <span>Certified Medical Interpreter</span>
+                    <span className="font-medium">+10% rate premium</span>
+                  </div>
+                  <div className="flex justify-between items-center pb-2 border-b border-border">
+                    <span>Certified Court Interpreter</span>
+                    <span className="font-medium">+15% rate premium</span>
+                  </div>
+                  <div className="flex justify-between items-center pb-2 border-b border-border">
+                    <span>Conference Interpretation Certification</span>
+                    <span className="font-medium">+20% rate premium</span>
+                  </div>
+                </div>
+                <Button className="mt-8" variant="outline">Upload Certifications</Button>
               </div>
-              <div className="flex items-start">
-                <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                <span>Detailed analytics and reporting</span>
+
+              {/* Earning Potential */}
+              <div className="bg-card rounded-xl p-8 border border-border shadow-sm">
+                <CreditCard className="h-12 w-12 text-primary mb-6" />
+                <h2 className="text-2xl font-bold mb-4">Earning Potential</h2>
+                <p className="text-muted-foreground mb-6">
+                  Your earning potential based on activity level and subscription tier.
+                </p>
+                <div className="space-y-4 mb-6">
+                  <div className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>Average hourly rate: $30-60 depending on language pair</span>
+                  </div>
+                  <div className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>Weekly payout schedule</span>
+                  </div>
+                  <div className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>Bonuses for high customer ratings</span>
+                  </div>
+                  <div className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>Referral program for additional income</span>
+                  </div>
+                  <div className="flex items-start">
+                    <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>Rush hour and weekend rate increases</span>
+                  </div>
+                </div>
+                <Button className="mt-2" asChild>
+                  <Link to="/interpreters">Start Earning Now</Link>
+                </Button>
               </div>
-              <div className="flex items-start">
-                <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                <span>Volume-based discounted rates</span>
-              </div>
-              <div className="flex items-start">
-                <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                <span>API integration with existing systems</span>
-              </div>
-            </div>
-            <Button className="mt-2">Contact for LSP Pricing</Button>
-          </div>
+            </>
+          )}
         </div>
       </div>
 
