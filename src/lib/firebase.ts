@@ -18,6 +18,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 
+// Check if we're in development mode to enable emulator
+const isDev = import.meta.env.DEV;
+if (isDev && window.location.hostname === "localhost") {
+  try {
+    // Connect to Firebase emulator if running locally
+    connectDatabaseEmulator(database, "localhost", 9000);
+    console.log("[Firebase] Connected to local emulator");
+  } catch (error) {
+    console.log("[Firebase] Local emulator not available, using production");
+  }
+}
+
 // Log access to database paths (for debugging)
 const logDatabaseAccess = (path) => {
   console.log(`[Firebase] Accessing database path: ${path}`);
